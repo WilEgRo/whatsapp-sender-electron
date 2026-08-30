@@ -10,6 +10,7 @@ const sendingActions = require('./app/sending');
 const groupImportActions = require('./app/group-import');
 const { CampaignDispatcherController } = require('./campaign/campaign-dispatcher-controller');
 const { ContactsController } = require('../../../features/contacts/presentation/contacts-controller');
+const { GroupsController } = require('../../../features/groups/presentation/groups-controller');
 
 class AppController {
   constructor() {
@@ -17,6 +18,11 @@ class AppController {
     this.storage = new FormStorage();
     this.ui = new UiManager();
     this.contactsController = new ContactsController({
+      stateRef: this,
+      ui: this.ui,
+      ipcClient: this.ipcClient
+    });
+    this.groupsController = new GroupsController({
       stateRef: this,
       ui: this.ui,
       ipcClient: this.ipcClient
@@ -1323,7 +1329,7 @@ class AppController {
   }
 
   loadGroups() {
-    return groupActions.loadGroups(this)
+    return this.groupsController.loadGroups()
       .then(() => this.refreshDestinationStatuses('groups', { repaint: true }))
       .finally(() => {
         this.refreshChatHistoryTargetOptions();
@@ -1342,7 +1348,7 @@ class AppController {
   }
 
   applyGroupFilter() {
-    return groupActions.applyGroupFilter(this);
+    return this.groupsController.applyGroupFilter();
   }
 
   applyContactFilter() {
@@ -1632,7 +1638,7 @@ class AppController {
   }
 
   exportGroupMembers(groupId, format) {
-    return groupActions.exportGroupMembers(this, groupId, format);
+    return this.groupsController.exportGroupMembers(groupId, format);
   }
 
   saveFormData() {
