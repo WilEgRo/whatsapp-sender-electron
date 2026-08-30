@@ -95,6 +95,7 @@ Desktop.ini
 # Archivos temporales de Electron / Chromium
 # ------------------------------------------------------------
 session/
+!src/features/session/
 sessions/
 chromium-data/
 user-data/
