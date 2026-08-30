@@ -13,6 +13,7 @@ const { ContactsController } = require('../../../features/contacts/presentation/
 const { GroupsController } = require('../../../features/groups/presentation/groups-controller');
 const { SchedulingController } = require('../../../features/scheduling/presentation/scheduling-controller');
 const { AnalyticsController } = require('../../../features/analytics/presentation/analytics-controller');
+const { HistoryController } = require('../../../features/history/presentation/history-controller');
 
 class AppController {
   constructor() {
@@ -35,6 +36,11 @@ class AppController {
       ipcClient: this.ipcClient
     });
     this.analyticsController = new AnalyticsController({
+      stateRef: this,
+      ui: this.ui,
+      ipcClient: this.ipcClient
+    });
+    this.historyController = new HistoryController({
       stateRef: this,
       ui: this.ui,
       ipcClient: this.ipcClient
@@ -238,162 +244,19 @@ class AppController {
   }
 
   scheduleDailyStatusRefresh() {
-    if (this.dailyStatusRefreshTimer) {
-      clearTimeout(this.dailyStatusRefreshTimer);
-      this.dailyStatusRefreshTimer = null;
-    }
-
-    const now = new Date();
-    const nextMidnight = new Date(now);
-    nextMidnight.setHours(24, 0, 4, 0);
-    const delay = Math.max(1000, nextMidnight.getTime() - now.getTime());
-
-    this.dailyStatusRefreshTimer = setTimeout(async () => {
-      try {
-        await Promise.all([
-          this.refreshDestinationStatuses('contacts', { repaint: true }),
-          this.refreshDestinationStatuses('groups', { repaint: true }),
-          this.refreshMessageStats({ silent: true })
-        ]);
-      } catch (error) {
-        console.error('Error actualizando estado diario a medianoche:', error);
-      } finally {
-        this.scheduleDailyStatusRefresh();
-      }
-    }, delay);
+    return this.historyController.scheduleDailyStatusRefresh();
   }
 
   getDestinationStatus(mode, destinationId) {
-    const safeMode = mode === 'groups' ? 'groups' : 'contacts';
-    const safeId = String(destinationId || '').trim();
-
-    if (!safeId) {
-      return {
-        sentToday: false,
-        lastSentAt: null
-      };
-    }
-
-    const modeSet = this.sentTodayByMode[safeMode];
-    const modeLastSent = this.lastSentAtByMode[safeMode];
-
-    if (modeSet.has(safeId)) {
-      return {
-        sentToday: true,
-        lastSentAt: modeLastSent[safeId] || null
-      };
-    }
-
-    if (safeMode === 'contacts') {
-      const numDigits = safeId.replace(/[^0-9]/g, '');
-      if (numDigits) {
-        const altId = `${numDigits}@c.us`;
-        if (modeSet.has(altId)) {
-          return {
-            sentToday: true,
-            lastSentAt: modeLastSent[altId] || null
-          };
-        }
-        if (modeSet.has(numDigits)) {
-          return {
-            sentToday: true,
-            lastSentAt: modeLastSent[numDigits] || null
-          };
-        }
-      }
-    }
-
-    return {
-      sentToday: false,
-      lastSentAt: null
-    };
+    return this.historyController.getDestinationStatus(mode, destinationId);
   }
 
   getAlreadySentSelectedTargetsCount(mode) {
-    const safeMode = mode === 'groups' ? 'groups' : 'contacts';
-
-    if (safeMode === 'contacts') {
-      if (!Array.isArray(this.selectedContacts)) {
-        return 0;
-      }
-      return this.selectedContacts.filter((contact) => {
-        const id = contact.id || contact.number;
-        const status = this.getDestinationStatus('contacts', id);
-        return Boolean(status && status.sentToday);
-      }).length;
-    }
-
-    if (safeMode === 'groups') {
-      const selectedGroupIds = this.ui ? this.ui.getSelectedGroupIds() : [];
-      if (!Array.isArray(selectedGroupIds)) {
-        return 0;
-      }
-      return selectedGroupIds.filter((groupId) => {
-        const status = this.getDestinationStatus('groups', groupId);
-        return Boolean(status && status.sentToday);
-      }).length;
-    }
-
-    return 0;
+    return this.historyController.getAlreadySentSelectedTargetsCount(mode);
   }
 
-  async refreshDestinationStatuses(mode, { repaint = true } = {}) {
-    const safeMode = mode === 'groups' ? 'groups' : 'contacts';
-    let destinationIds = [];
-
-    if (safeMode === 'contacts') {
-      const idsFromContacts = (this.contacts || []).map((contact) => contact.id);
-      const idsFromSelected = (this.selectedContacts || []).map((contact) => contact.id || contact.number);
-      const uniqueSet = new Set([...idsFromContacts, ...idsFromSelected].filter(Boolean));
-      destinationIds = Array.from(uniqueSet);
-    } else {
-      destinationIds = (this.groups || []).map((group) => group.id);
-    }
-
-    if (!Array.isArray(destinationIds) || destinationIds.length === 0) {
-      return;
-    }
-
-    try {
-      const response = await this.ipcClient.invoke('get-destination-statuses', {
-        destinationType: safeMode,
-        destinationIds
-      });
-
-      if (!response || !response.success || !response.result || !response.result.byId) {
-        return;
-      }
-
-      const byId = response.result.byId;
-      const todaySet = new Set();
-      const lastSentMap = Object.create(null);
-
-      Object.keys(byId).forEach((id) => {
-        const item = byId[id] || {};
-        if (item.sentToday) {
-          todaySet.add(id);
-        }
-
-        if (item.lastSentAt) {
-          lastSentMap[id] = item.lastSentAt;
-        }
-      });
-
-      this.sentTodayByMode[safeMode] = todaySet;
-      this.lastSentAtByMode[safeMode] = lastSentMap;
-
-      if (!repaint) {
-        return;
-      }
-
-      if (safeMode === 'contacts') {
-        this.applyContactFilter();
-      } else {
-        this.applyGroupFilter();
-      }
-    } catch (error) {
-      console.error(`Error cargando estado de destinatarios (${safeMode}):`, error);
-    }
+  async refreshDestinationStatuses(mode, options) {
+    return this.historyController.refreshDestinationStatuses(mode, options);
   }
 
   async exportMessageStatsExcel() {
@@ -1151,175 +1014,23 @@ class AppController {
   }
 
   getChatHistoryTargets() {
-    const contactTargets = (Array.isArray(this.contacts) ? this.contacts : []).map((contact) => ({
-      id: contact.id,
-      type: 'contacts',
-      label: `${contact.name} (${contact.number})`,
-      searchText: `${contact.name} ${contact.number}`.toLowerCase()
-    }));
-
-    const groupTargets = (Array.isArray(this.groups) ? this.groups : []).map((group) => ({
-      id: group.id,
-      type: 'groups',
-      label: `[Grupo] ${group.name}`,
-      searchText: String(group.name || '').toLowerCase()
-    }));
-
-    return [...contactTargets, ...groupTargets].sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    return this.historyController.getChatHistoryTargets();
   }
 
   refreshChatHistoryTargetOptions() {
-    const select = document.getElementById('chatHistoryTargetSelect');
-    const statusHint = document.getElementById('chatHistoryStatusHint');
-    if (!select) {
-      return;
-    }
-
-    const term = String(this.chatHistoryState.searchTerm || '').trim().toLowerCase();
-    const allTargets = this.getChatHistoryTargets();
-    const filtered = term
-      ? allTargets.filter((item) => item.searchText.includes(term))
-      : allTargets;
-
-    this.chatHistoryState.filteredTargets = filtered;
-
-    if (filtered.length === 0) {
-      select.innerHTML = '';
-      this.chatHistoryState.selectedTargetId = '';
-      if (statusHint) {
-        statusHint.textContent = 'No se encontraron chats para ese filtro.';
-      }
-      return;
-    }
-
-    const previous = String(this.chatHistoryState.selectedTargetId || '').trim();
-    const nextSelected = filtered.find((item) => item.id === previous) || filtered[0];
-
-    select.innerHTML = filtered
-      .map((item) => `<option value="${this.escapeHtml(item.id)}">${this.escapeHtml(item.label)}</option>`)
-      .join('');
-
-    select.value = nextSelected.id;
-    this.chatHistoryState.selectedTargetId = nextSelected.id;
-    this.chatHistoryState.selectedTargetType = nextSelected.type;
-
-    if (statusHint) {
-      statusHint.textContent = `${filtered.length} chat(s) disponible(s).`;
-    }
+    return this.historyController.refreshChatHistoryTargetOptions();
   }
 
   renderChatHistoryConversation(items, chatLabel) {
-    const container = document.getElementById('chatHistoryConversation');
-    const countHint = document.getElementById('chatHistoryResultCount');
-    if (!container) {
-      return;
-    }
-
-    const safeItems = Array.isArray(items) ? items : [];
-    if (countHint) {
-      countHint.textContent = `${safeItems.length} mensajes de texto`;
-    }
-
-    if (safeItems.length === 0) {
-      container.innerHTML = '<p class="chat-history-empty">No se encontraron mensajes de texto en este chat.</p>';
-      return;
-    }
-
-    container.innerHTML = safeItems
-      .map((item) => {
-        const timestamp = item && item.timestampIso ? new Date(item.timestampIso) : null;
-        const timeLabel = timestamp && !Number.isNaN(timestamp.getTime())
-          ? timestamp.toLocaleString('es-BO', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
-          : '--:--';
-        const isOutgoing = Boolean(item && item.fromMe);
-        const senderLabel = isOutgoing ? 'Yo' : String(item && item.sender ? item.sender : chatLabel || 'Contacto');
-
-        return `
-          <article class="chat-message ${isOutgoing ? 'chat-message--outgoing' : 'chat-message--incoming'}">
-            <div class="chat-message__meta">
-              <span>${this.escapeHtml(senderLabel)}</span>
-              <span>${this.escapeHtml(timeLabel)}</span>
-            </div>
-            <p class="chat-message__text">${this.escapeHtml(item && item.text ? item.text : '')}</p>
-          </article>
-        `;
-      })
-      .join('');
+    return this.historyController.renderChatHistoryConversation(items, chatLabel);
   }
 
   async loadChatHistoryPreview() {
-    const select = document.getElementById('chatHistoryTargetSelect');
-    const statusHint = document.getElementById('chatHistoryStatusHint');
-    if (!select || !select.value) {
-      this.ui.showToast('Selecciona un chat para ver la conversacion.', 'warning');
-      return;
-    }
-
-    const chatId = String(select.value || '').trim();
-    const selected = (this.chatHistoryState.filteredTargets || []).find((item) => item.id === chatId) || null;
-    this.chatHistoryState.selectedTargetId = chatId;
-    this.chatHistoryState.selectedTargetType = selected ? selected.type : 'contacts';
-
-    if (statusHint) {
-      statusHint.textContent = 'Cargando conversacion...';
-    }
-
-    try {
-      const response = await this.ipcClient.invoke('get-chat-history-preview', {
-        chatId,
-        limit: 220
-      });
-
-      if (!response || !response.success || !response.result) {
-        throw new Error(response && response.error ? response.error : 'No se pudo recuperar el historial');
-      }
-
-      const result = response.result;
-      const items = Array.isArray(result.items) ? result.items : [];
-      this.chatHistoryState.items = items;
-      this.renderChatHistoryConversation(items, result.chatName || (selected && selected.label) || 'Chat');
-
-      if (statusHint) {
-        statusHint.textContent = `Conversacion cargada: ${items.length} mensaje(s) de texto.`;
-      }
-    } catch (error) {
-      console.error('Error cargando historial de chat:', error);
-      this.chatHistoryState.items = [];
-      this.renderChatHistoryConversation([], selected && selected.label ? selected.label : 'Chat');
-      if (statusHint) {
-        statusHint.textContent = `Error: ${error.message || 'no se pudo cargar el historial'}`;
-      }
-      this.ui.showToast('No se pudo cargar el historial de chat.', 'error');
-    }
+    return this.historyController.loadChatHistoryPreview();
   }
 
   bindChatHistoryEvents() {
-    const searchInput = document.getElementById('chatHistoryContactSearch');
-    const select = document.getElementById('chatHistoryTargetSelect');
-    const loadButton = document.getElementById('chatHistoryLoadButton');
-
-    if (searchInput) {
-      searchInput.addEventListener('input', () => {
-        this.chatHistoryState.searchTerm = String(searchInput.value || '');
-        this.refreshChatHistoryTargetOptions();
-      });
-    }
-
-    if (select) {
-      select.addEventListener('change', () => {
-        this.chatHistoryState.selectedTargetId = String(select.value || '');
-      });
-
-      select.addEventListener('dblclick', () => {
-        this.loadChatHistoryPreview();
-      });
-    }
-
-    if (loadButton) {
-      loadButton.addEventListener('click', () => {
-        this.loadChatHistoryPreview();
-      });
-    }
+    return this.historyController.bindEvents();
   }
 
   selectContact(contactId) {
