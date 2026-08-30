@@ -2,7 +2,7 @@
 
 Aplicacion de escritorio en Electron para gestionar envios a contactos y grupos de WhatsApp Web con controles de seguridad, validacion previa, exportacion de integrantes de grupos y evaluacion de riesgo antes de disparar una campaña.
 
-Version actual: 3.5.5
+Version actual: 3.5.6
 
 ## Para que sirve
 

@@ -11,6 +11,7 @@ const groupImportActions = require('./app/group-import');
 const { CampaignDispatcherController } = require('./campaign/campaign-dispatcher-controller');
 const { ContactsController } = require('../../../features/contacts/presentation/contacts-controller');
 const { GroupsController } = require('../../../features/groups/presentation/groups-controller');
+const { SchedulingController } = require('../../../features/scheduling/presentation/scheduling-controller');
 
 class AppController {
   constructor() {
@@ -23,6 +24,11 @@ class AppController {
       ipcClient: this.ipcClient
     });
     this.groupsController = new GroupsController({
+      stateRef: this,
+      ui: this.ui,
+      ipcClient: this.ipcClient
+    });
+    this.schedulingController = new SchedulingController({
       stateRef: this,
       ui: this.ui,
       ipcClient: this.ipcClient
@@ -198,169 +204,19 @@ class AppController {
   }
 
   bindSchedulingUiEvents() {
-    if (this.ui.scheduleTargetType) {
-      this.ui.scheduleTargetType.addEventListener('change', () => {
-        this.scheduleDraft.targetType = this.ui.scheduleTargetType.value === 'groups' ? 'groups' : 'contacts';
-        this.scheduleDraft.targetId = '';
-        this.ui.renderScheduleTargetOptions(this.scheduleDraft.targetType, this.contacts, this.groups, '');
-      });
-    }
-
-    if (this.ui.scheduleTargetId) {
-      this.ui.scheduleTargetId.addEventListener('change', () => {
-        this.scheduleDraft.targetId = String(this.ui.scheduleTargetId.value || '');
-      });
-    }
-
-    const selectScheduleFilesButton = document.getElementById('selectFilesSchedule');
-    if (selectScheduleFilesButton) {
-      selectScheduleFilesButton.addEventListener('click', async () => {
-        try {
-          const selected = await this.ipcClient.invoke('select-files');
-          this.scheduleDraft.files = Array.isArray(selected) ? selected.slice(0, 3) : [];
-          this.ui.renderFiles('schedule', this.scheduleDraft.files);
-        } catch (error) {
-          console.error('Error seleccionando archivos programados:', error);
-          this.ui.showToast('No se pudieron seleccionar archivos para programacion', 'error');
-        }
-      });
-    }
-
-    const filesFirst = document.getElementById('sendFilesFirstSchedule');
-    const textFirst = document.getElementById('sendTextFirstSchedule');
-
-    if (filesFirst) {
-      filesFirst.addEventListener('change', () => {
-        this.scheduleDraft.sendFilesFirst = Boolean(filesFirst.checked);
-      });
-    }
-
-    if (textFirst) {
-      textFirst.addEventListener('change', () => {
-        this.scheduleDraft.sendFilesFirst = !Boolean(textFirst.checked);
-      });
-    }
-
-    const createButton = document.getElementById('createScheduleButton');
-    if (createButton) {
-      createButton.addEventListener('click', () => this.createScheduledMessage());
-    }
-
-    const refreshButton = document.getElementById('refreshScheduleButton');
-    if (refreshButton) {
-      refreshButton.addEventListener('click', () => this.refreshScheduledMessages({ silent: false }));
-    }
-
-    if (this.ui.scheduledMessagesList) {
-      this.ui.scheduledMessagesList.addEventListener('click', async (event) => {
-        const button = event.target.closest('[data-cancel-schedule-id]');
-        if (!button) {
-          return;
-        }
-
-        const scheduleId = Number(button.dataset.cancelScheduleId);
-        if (!Number.isFinite(scheduleId)) {
-          return;
-        }
-
-        await this.cancelScheduledMessage(scheduleId);
-      });
-    }
+    return this.schedulingController.bindEvents();
   }
 
   async createScheduledMessage() {
-    if (!this.hasFeature('bulk_send')) {
-      this.ui.showToast('Tu plan no incluye programacion de envios masivos.', 'warning');
-      return;
-    }
-
-    const targetType = this.ui.scheduleTargetType && this.ui.scheduleTargetType.value === 'groups' ? 'groups' : 'contacts';
-    const targetId = this.ui.scheduleTargetId ? String(this.ui.scheduleTargetId.value || '').trim() : '';
-    const targetLabel = this.ui.scheduleTargetId && this.ui.scheduleTargetId.selectedOptions && this.ui.scheduleTargetId.selectedOptions[0]
-      ? this.ui.scheduleTargetId.selectedOptions[0].textContent
-      : targetId;
-    const messageText = this.ui.scheduleMessageText ? String(this.ui.scheduleMessageText.value || '').trim() : '';
-    const scheduledAt = this.ui.scheduleDatetime ? String(this.ui.scheduleDatetime.value || '').trim() : '';
-    const delayMin = this.ui.scheduleDelayMin ? Number(this.ui.scheduleDelayMin.value || 3) : 3;
-    const delayMax = this.ui.scheduleDelayMax ? Number(this.ui.scheduleDelayMax.value || 6) : 6;
-
-    if (!targetId) {
-      this.ui.showToast('Selecciona un destinatario para programar', 'warning');
-      return;
-    }
-
-    if (!scheduledAt) {
-      this.ui.showToast('Selecciona fecha y hora para programar', 'warning');
-      return;
-    }
-
-    try {
-      const response = await this.ipcClient.invoke('create-scheduled-message', {
-        targetType,
-        targetId,
-        targetLabel,
-        messageText,
-        files: this.scheduleDraft.files.map((item) => item.path),
-        sendFilesFirst: this.scheduleDraft.sendFilesFirst !== false,
-        delayMin,
-        delayMax,
-        scheduledAt
-      });
-
-      if (!response || !response.success) {
-        this.ui.showToast(`No se pudo programar: ${response && response.error ? response.error : 'error desconocido'}`, 'error');
-        return;
-      }
-
-      this.ui.showToast('Mensaje programado correctamente', 'success');
-      if (this.ui.scheduleMessageText) {
-        this.ui.scheduleMessageText.value = '';
-      }
-      if (this.ui.scheduleDatetime) {
-        this.ui.scheduleDatetime.value = '';
-      }
-      this.scheduleDraft.files = [];
-      this.ui.renderFiles('schedule', []);
-      this.refreshScheduledMessages({ silent: true });
-    } catch (error) {
-      console.error('Error creando mensaje programado:', error);
-      this.ui.showToast('Error inesperado al programar mensaje', 'error');
-    }
+    return this.schedulingController.createScheduledMessage();
   }
 
-  async refreshScheduledMessages({ silent = true } = {}) {
-    try {
-      const response = await this.ipcClient.invoke('get-scheduled-messages', { status: 'pending' });
-      if (!response || !response.success) {
-        if (!silent) {
-          this.ui.showToast('No se pudo cargar la lista de programados', 'warning');
-        }
-        return;
-      }
-
-      this.ui.renderScheduledMessages(response.items || []);
-    } catch (error) {
-      console.error('Error listando programados:', error);
-      if (!silent) {
-        this.ui.showToast('Error inesperado al listar programados', 'error');
-      }
-    }
+  async refreshScheduledMessages(options) {
+    return this.schedulingController.refreshScheduledMessages(options);
   }
 
   async cancelScheduledMessage(id) {
-    try {
-      const response = await this.ipcClient.invoke('cancel-scheduled-message', { id });
-      if (!response || !response.success) {
-        this.ui.showToast(`No se pudo cancelar: ${response && response.error ? response.error : 'error desconocido'}`, 'error');
-        return;
-      }
-
-      this.ui.showToast('Mensaje programado cancelado', 'success');
-      this.refreshScheduledMessages({ silent: true });
-    } catch (error) {
-      console.error('Error cancelando programado:', error);
-      this.ui.showToast('Error inesperado al cancelar', 'error');
-    }
+    return this.schedulingController.cancelScheduledMessage(id);
   }
 
   bindStatsEvents() {
