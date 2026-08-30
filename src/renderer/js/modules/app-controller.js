@@ -9,12 +9,18 @@ const groupActions = require('./app/groups');
 const sendingActions = require('./app/sending');
 const groupImportActions = require('./app/group-import');
 const { CampaignDispatcherController } = require('./campaign/campaign-dispatcher-controller');
+const { ContactsController } = require('../../../features/contacts/presentation/contacts-controller');
 
 class AppController {
   constructor() {
     this.ipcClient = new IpcClient();
     this.storage = new FormStorage();
     this.ui = new UiManager();
+    this.contactsController = new ContactsController({
+      stateRef: this,
+      ui: this.ui,
+      ipcClient: this.ipcClient
+    });
 
     this.modeConfig = modeConfig;
     this.isReady = false;
@@ -1326,7 +1332,7 @@ class AppController {
   }
 
   loadContacts() {
-    return contactActions.loadContacts(this)
+    return this.contactsController.loadContacts()
       .then(() => this.refreshDestinationStatuses('contacts', { repaint: true }))
       .finally(() => {
         this.refreshChatHistoryTargetOptions();
@@ -1340,7 +1346,7 @@ class AppController {
   }
 
   applyContactFilter() {
-    return contactActions.applyContactFilter(this);
+    return this.contactsController.applyContactFilter();
   }
 
   escapeHtml(value) {
@@ -1525,27 +1531,27 @@ class AppController {
   }
 
   selectContact(contactId) {
-    return contactActions.selectContact(this, contactId);
+    return this.contactsController.selectContact(contactId);
   }
 
   removeSelectedContact(contactId) {
-    return contactActions.removeSelectedContact(this, contactId);
+    return this.contactsController.removeSelectedContact(contactId);
   }
 
   clearSelectedContacts() {
-    return contactActions.clearSelectedContacts(this);
+    return this.contactsController.clearSelectedContacts();
   }
 
   syncManualNumbers(textValue) {
-    return contactActions.syncManualNumbers(this, textValue);
+    return this.contactsController.syncManualNumbers(textValue);
   }
 
   importExcelContacts() {
-    return contactActions.importExcelContacts(this);
+    return this.contactsController.importExcelContacts();
   }
 
   markContactsAsRecentlyMessaged(targets) {
-    const result = contactActions.markContactsAsRecentlyMessaged(this, targets);
+    const result = this.contactsController.markContactsAsRecentlyMessaged(targets);
     sendingActions.refreshRiskPanel(this, 'contacts');
     return result;
   }

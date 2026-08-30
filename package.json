@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-sender-electron",
-  "version": "3.5.2", 
+  "version": "3.5.4", 
   "description": "migración de la primera aplicación de WhatsApp Sender a Electron",
   "main": "src/main/main.js",
   "scripts": {

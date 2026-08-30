@@ -1,8 +1,8 @@
 # WhatsApp Sender Pro
 
-Aplicacion de escritorio en Electron para gestionar envios a contactos y grupos de WhatsApp Web con controles de seguridad, validacion previa, exportacion de integrantes de grupos y evaluacion de riesgo antes de disparar una campana.
+Aplicacion de escritorio en Electron para gestionar envios a contactos y grupos de WhatsApp Web con controles de seguridad, validacion previa, exportacion de integrantes de grupos y evaluacion de riesgo antes de disparar una campaña.
 
-Version actual: 3.5.2
+Version actual: 3.5.4
 
 ## Para que sirve
 
