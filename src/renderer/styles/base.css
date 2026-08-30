@@ -1,0 +1,218 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Legacy aliases mapping to design tokens for backward compatibility */
+  --bg-0: var(--bg-app);
+  --bg-1: var(--bg-sidebar);
+  --surface: var(--bg-surface);
+  --surface-strong: var(--bg-surface-elevated);
+  --text-main: var(--text-primary);
+  --text-soft: var(--text-secondary);
+  --line: var(--border-subtle);
+  --brand: var(--accent-primary);
+  --Activo: var(--status-success);
+  --brand-strong: var(--accent-active);
+  --danger: var(--status-danger);
+  --warning: var(--status-warning);
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--bg-app);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Background orbs removed completely in Slice 01 */
+
+.topbar,
+.layout,
+.toast-container,
+.modal {
+  position: relative;
+  z-index: var(--z-base);
+}
+
+/* Stats dashboard inside content canvas */
+.stats-dashboard {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.stats-dashboard__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.stats-dashboard__header h2 {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  margin-bottom: 2px;
+  color: var(--text-primary);
+}
+
+.stats-dashboard__header p {
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+}
+
+.stats-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.admin-actions-row {
+  display: inline-flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.stats-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  padding: var(--space-3);
+}
+
+.stats-card__label {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.stats-card__value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.stats-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.stats-detail-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.stats-detail-card h3 {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-secondary);
+}
+
+.stats-detail-card p {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+}
+
+.stats-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.stats-table-section {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.stats-table-wrapper {
+  overflow-x: auto;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 330px;
+}
+
+.stats-table th,
+.stats-table td {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 8px 10px;
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+
+.stats-table th {
+  color: var(--text-secondary);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  font-size: var(--fs-xs);
+}
+
+.stats-table td {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.stats-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.stats-table tbody tr:hover td {
+  background: var(--bg-surface-hover);
+}
+
+.panel-header {
+  margin-bottom: var(--space-4);
+}
+
+.panel-header h2 {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.panel-header p {
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}

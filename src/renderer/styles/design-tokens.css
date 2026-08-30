@@ -1,0 +1,156 @@
+/**
+ * WhatsApp Sender Pro — Design Tokens (Slice 01)
+ * Direction: Deep Graphite & Slate Operational Theme
+ * Contrast & Accessibility: WCAG 2.1 AA Compliant
+ */
+
+:root {
+  /* ==========================================================================
+     Surfaces & Backgrounds
+     ========================================================================== */
+  --bg-app: #090d13;                  /* Main window background */
+  --bg-sidebar: #0d121a;              /* Fixed sidebar background */
+  --bg-surface: #141b26;              /* Cards, panels, topbar */
+  --bg-surface-elevated: #1a2332;     /* Dropdowns, tooltips, active rows */
+  --bg-surface-hover: #1f2b3d;        /* Interactive hover states */
+  --bg-surface-active: #26354a;       /* Active/selected states */
+  --bg-input: #0e141f;                /* Inputs, selects, textareas */
+  --bg-overlay: rgba(5, 8, 13, 0.82); /* Modal & backdrop overlays */
+
+  /* ==========================================================================
+     Borders & Dividers
+     ========================================================================== */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --border-focus: #3b82f6;
+
+  /* ==========================================================================
+     Typography Colors
+     ========================================================================== */
+  --text-primary: #f0f6fc;            /* High hierarchy readable text */
+  --text-secondary: #8b949e;          /* Secondary labels, hints, metadata */
+  --text-muted: #525c68;              /* Placeholders, disabled text */
+  --text-inverse: #090d13;            /* Dark text on bright accent */
+
+  /* ==========================================================================
+     Semantic Colors & Statuses
+     ========================================================================== */
+  /* Primary Accent */
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-active: #1e40af;
+  --accent-subtle: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+
+  /* Success (Connected, Sent, Verified) */
+  --status-success: #10b981;
+  --status-success-bg: rgba(16, 185, 129, 0.12);
+  --status-success-border: rgba(16, 185, 129, 0.28);
+  --status-success-text: #34d399;
+
+  /* Warning (Delays, Reconnecting, High Risk, Paused) */
+  --status-warning: #f59e0b;
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-warning-border: rgba(245, 158, 11, 0.28);
+  --status-warning-text: #fbbf24;
+
+  /* Danger (Error, Disconnected, Blocked, Cancelled) */
+  --status-danger: #ef4444;
+  --status-danger-bg: rgba(239, 68, 68, 0.12);
+  --status-danger-border: rgba(239, 68, 68, 0.28);
+  --status-danger-text: #f87171;
+
+  /* Info (Telemetry, Counts, System Messages) */
+  --status-info: #06b6d4;
+  --status-info-bg: rgba(6, 182, 212, 0.12);
+  --status-info-border: rgba(6, 182, 212, 0.28);
+  --status-info-text: #22d3ee;
+
+  /* Neutral (Idle, Inactive, Muted) */
+  --status-neutral: #6e7681;
+  --status-neutral-bg: rgba(110, 118, 129, 0.12);
+  --status-neutral-border: rgba(110, 118, 129, 0.24);
+  --status-neutral-text: #8b949e;
+
+  /* ==========================================================================
+     Typography System
+     ========================================================================== */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Consolas, monospace;
+
+  /* Font Sizes */
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-base: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 18px;
+  --fs-2xl: 22px;
+  --fs-3xl: 28px;
+
+  /* Font Weights */
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Line Heights */
+  --lh-none: 1;
+  --lh-tight: 1.25;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.625;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.08em;
+
+  /* ==========================================================================
+     Spacing Scale (Base 4)
+     ========================================================================== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+
+  /* ==========================================================================
+     Border Radii
+     ========================================================================== */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* ==========================================================================
+     Shadows (Crisp Technical Elevation, No Fuzzy Glows)
+     ========================================================================== */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.6);
+
+  /* ==========================================================================
+     Transitions
+     ========================================================================== */
+  --transition-fast: 0.12s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ==========================================================================
+     Z-Index Layers
+     ========================================================================== */
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-dock: 20;
+  --z-overlay: 50;
+  --z-modal: 100;
+  --z-toast: 200;
+}

@@ -1,0 +1,222 @@
+/* Group Import (Excel to WhatsApp Group) styles using Design Tokens */
+
+.group-import-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.group-import-name-card input {
+  width: 100%;
+}
+
+.group-import-file-name {
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.group-import-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.group-import-actions .send-button {
+  margin-top: 0;
+}
+
+.group-import-metrics,
+.group-import-result-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.group-import-metrics div,
+.group-import-result-metrics div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.group-import-metrics strong,
+.group-import-result-metrics strong {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.group-import-metrics span,
+.group-import-result-metrics span,
+.group-import-result span {
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.group-import-progress {
+  margin: 14px 0 0;
+  color: var(--text-secondary);
+}
+
+.group-import-results {
+  margin-top: 12px;
+}
+
+.group-import-result-groups {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.group-import-diagnostics {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.group-import-diagnostics h3 {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+}
+
+.group-import-diagnostic-table {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.7fr) minmax(0, 1.3fr);
+  gap: 1px;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.group-import-diagnostic-table > div {
+  padding: 8px 12px;
+  background: var(--bg-surface-raised);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+}
+
+.group-import-diagnostic-table > div:nth-child(odd) {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.group-import-preview {
+  margin-top: 12px;
+}
+
+.group-import-preview h3,
+.group-import-result-groups h3 {
+  margin: 0 0 8px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+}
+
+.group-import-preview-table,
+.group-import-participant-list {
+  display: grid;
+  gap: 1px;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.group-import-preview-table > div,
+.group-import-participant-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.group-import-participant-list > div {
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.8fr);
+}
+
+.group-import-participant-list small {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+}
+
+.group-import-preview-table span:last-child,
+.group-import-participant-list span {
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+}
+
+.group-import-result {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+}
+
+.group-import-result.is-failed {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.group-import-result > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.group-import-invite {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.group-import-invite a {
+  overflow-wrap: anywhere;
+  color: var(--accent-primary);
+  text-decoration: underline;
+}
+
+.group-import-result ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 760px) {
+  .group-import-layout,
+  .group-import-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .group-import-metrics,
+  .group-import-result-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .group-import-preview-table > div,
+  .group-import-participant-list > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .group-import-diagnostic-table {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https: http://127.0.0.1:3210;">
+    <title>La Martina Sender Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <!-- SIDEBAR -->
+        <aside class="app-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <div class="brand-icon-box" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                    </div>
+                    <div class="brand-info">
+                        <span class="brand-title">WhatsApp Sender</span>
+                        <span class="brand-version">PRO v3.5.2</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Navegación principal">
+                <div class="sidebar-nav-group">
+                    <span class="sidebar-nav-label">Operaciones</span>
+                    <button id="mensajesTab" class="nav-item active" data-tab="contacts" type="button">
+                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span>Despachador de Campañas</span>
+                    </button>
+                    <button id="gruposTab" class="nav-item" data-tab="groups" type="button">
+                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span>Grupos</span>
+                    </button>
+                    <button id="importarGruposTab" class="nav-item" data-tab="group-import" type="button">
+                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+                        <span>Crear Grupo Excel</span>
+                    </button>
+                    <button id="programacionTab" class="nav-item" data-tab="scheduling" type="button">
+                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><polyline points="12 14 12 17 14 17"/></svg>
+                        <span>Programación</span>
+                    </button>
+                </div>
+
+                <div class="sidebar-nav-group">
+                    <span class="sidebar-nav-label">Auditoría & Datos</span>
+                    <button id="estadisticasTab" class="nav-item" data-tab="statistics" type="button">
+                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+                        <span>Historial & Métricas</span>
+                    </button>
+                    <button id="adminTab" class="nav-item hidden" data-tab="admin" type="button">
+                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a1 1 0 0 0-1 1v4a1 1 0 0 0 .293.707l2.5 2.5a1 1 0 0 0 1.414-1.414L13 11.586V7a1 1 0 0 0-1-1z"/></svg>
+                        <span>Consola Admin</span>
+                    </button>
+                </div>
+            </nav>
+
+            <footer class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <div class="sidebar-avatar">WP</div>
+                    <div class="sidebar-user-info">
+                        <span class="sidebar-user-name">WhatsApp Sender Pro</span>
+                        <span class="sidebar-user-role">v3.5.2 · Standalone</span>
+                    </div>
+                </div>
+                <button id="logoutButton" class="ghost-button ghost-button--tiny topbar-logout-button hidden" type="button" title="Cerrar sesión actual">
+                    Cerrar sesión
+                </button>
+            </footer>
+        </aside>
+
+        <!-- MAIN AREA -->
+        <div class="app-main">
+            <!-- TOPBAR -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <h1 class="topbar-page-title" id="currentSectionTitle">Despachador de Campañas</h1>
+                    <p class="topbar-page-desc" id="currentSectionDesc">Composición y despacho seguro de campañas para contactos</p>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="session-status-pill" title="Estado de la conexión WhatsApp">
+                        <span id="statusDot" class="status-dot connecting"></span>
+                        <span id="statusText">Inicializando cliente...</span>
+                    </div>
+
+                    <div class="topbar-metrics">
+                        <div class="metric-pill" title="Total de contactos disponibles">
+                            <span>Contactos:</span>
+                            <strong id="totalContacts">0</strong>
+                        </div>
+                        <div class="metric-pill" title="Total de grupos disponibles">
+                            <span>Grupos:</span>
+                            <strong id="totalGroups">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- CONTENT CANVAS (Scrollable) -->
+            <main class="app-canvas" id="appCanvas">
+
+            <section class="tab-panel active" data-panel="contacts" id="mensajesContent">
+                <div class="campaign-dispatcher">
+                    <div class="dispatcher-header">
+                        <div class="dispatcher-title-group">
+                            <h2>Despachador de Campañas</h2>
+                            <p>Creación y despacho seguro de campañas para contactos con validación previa de seguridad.</p>
+                        </div>
+                    </div>
+
+                    <div class="dispatcher-grid">
+                        <!-- LEFT COLUMN: COMPOSER -->
+                        <div class="dispatcher-composer">
+                            <!-- 1. Audience Selector (Contacts only) -->
+                            <div class="composer-card">
+                                <div class="composer-card-header">
+                                    <h3>Audiencia de Contactos</h3>
+                                </div>
+
+                                <!-- Contacts View -->
+                                <div id="audienceContactsView" class="audience-view-container">
+                                    <label class="field-block" for="contactSearchInput">
+                                        <span>Buscar o filtrar contactos</span>
+                                        <div class="contact-search-row">
+                                            <input id="contactSearchInput" class="contact-search-input" type="text" placeholder="Buscar por nombre o número (ej: 5917...)">
+                                            <button id="importExcelContactsButton" class="ghost-button" type="button">📊 Importar Excel / CSV</button>
+                                            <button id="syncContactsButton" class="ghost-button" type="button">🔄 Sincronizar</button>
+                                        </div>
+                                        <small id="contactFilterInfo" class="hint">Escribe para filtrar contactos en tiempo real o importa desde Excel.</small>
+                                    </label>
+
+                                    <section class="field-block">
+                                        <div class="field-headline">
+                                            <span>Resultados de búsqueda</span>
+                                            <small id="contactResultsCount">0 resultados</small>
+                                        </div>
+                                        <div class="contact-results-table-head" aria-hidden="true">
+                                            <span>Nombre</span>
+                                            <span>Número</span>
+                                            <span>Enviado hoy</span>
+                                        </div>
+                                        <div id="contactResultsList" class="contact-results" aria-live="polite"></div>
+                                    </section>
+
+                                    <section class="field-block">
+                                        <div class="field-headline">
+                                            <span>Destinatarios seleccionados (Edición manual o por Excel)</span>
+                                            <div class="selected-contacts-controls">
+                                                <small id="selectedContactsCount">0 seleccionados</small>
+                                                <button id="clearSelectedContactsButton" class="ghost-button ghost-button--tiny" type="button">Limpiar todo</button>
+                                            </div>
+                                        </div>
+                                        <div id="selectedContactsChips" class="selected-contact-chips"></div>
+                                        <textarea id="numeros" class="contact-numbers-input" placeholder="Ingresa o pega números separados por coma o salto de línea (ej: 59174447830, 59171112233)..." rows="2"></textarea>
+                                    </section>
+                                </div>
+                            </div>
+
+                            <!-- 2. Message Composer -->
+                            <div class="composer-card">
+                                <div class="composer-card-header">
+                                    <h3>Composición del Mensaje</h3>
+                                    <div class="variables-bar">
+                                        <span class="variables-bar-label">Variables:</span>
+                                        <button type="button" class="var-chip" data-insert-variable="contacts" data-variable-token="{{nombre}}">{{nombre}}</button>
+                                        <button type="button" class="var-chip" data-insert-variable="contacts" data-variable-token="{{nombre_completo}}">{{nombre_completo}}</button>
+                                        <button type="button" class="var-chip" data-insert-variable="contacts" data-variable-token="{{numero}}">{{numero}}</button>
+                                    </div>
+                                </div>
+
+                                <div class="message-tabs" id="messageTabsContacts">
+                                    <button type="button" class="message-tab is-active" data-message-tab="contacts" data-message-index="1">Mensaje 1</button>
+                                    <button type="button" class="message-tab hidden" data-message-tab="contacts" data-message-index="2">
+                                        Mensaje 2
+                                        <span class="message-tab__close" role="button" tabindex="0" data-close-message-tab="contacts" data-message-index="2">x</span>
+                                    </button>
+                                    <button type="button" class="message-tab hidden" data-message-tab="contacts" data-message-index="3">
+                                        Mensaje 3
+                                        <span class="message-tab__close" role="button" tabindex="0" data-close-message-tab="contacts" data-message-index="3">x</span>
+                                    </button>
+                                    <button type="button" class="message-tab message-tab--add" data-add-message-tab="contacts" aria-label="Agregar mensaje">+</button>
+                                </div>
+
+                                <div class="message-panes" id="messagePanesContacts">
+                                    <textarea id="mensaje" data-message-pane="contacts" data-message-index="1" placeholder="Escribe aquí el contenido principal de tu campaña..." rows="4"></textarea>
+                                    <textarea id="mensajeContacts2" data-message-pane="contacts" data-message-index="2" class="hidden" placeholder="Escribe aquí el mensaje 2 (opcional)..." rows="4"></textarea>
+                                    <textarea id="mensajeContacts3" data-message-pane="contacts" data-message-index="3" class="hidden" placeholder="Escribe aquí el mensaje 3 (opcional)..." rows="4"></textarea>
+                                </div>
+
+                                <div class="message-meta-row">
+                                    <span id="messageCharCount" class="message-char-count">0 caracteres</span>
+                                </div>
+
+                                <div class="message-variables" id="messageVariablesContacts">
+                                    <div class="message-variable-builder">
+                                        <label for="customVarNameContacts">Variable personalizada</label>
+                                        <input id="customVarNameContacts" type="text" placeholder="ej: ciudad">
+                                        <input id="customVarValueContacts" type="text" placeholder="ej: Santa Cruz">
+                                        <button id="addCustomVarContacts" class="ghost-button ghost-button--tiny" type="button">Agregar variable</button>
+                                    </div>
+                                    <label for="randomTagsContacts">Opciones para {{etiqueta_aleatoria}} (separadas por coma)</label>
+                                    <input id="randomTagsContacts" type="text" placeholder="vip, nuevo, promo-marzo">
+                                    <div id="customVarsListContacts" class="custom-vars-list" aria-live="polite"></div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Attachments -->
+                            <div class="composer-card">
+                                <div class="composer-card-header">
+                                    <h3>Archivos Adjuntos</h3>
+                                    <button id="selectFiles" class="ghost-button ghost-button--tiny" type="button">+ Adjuntar archivos</button>
+                                </div>
+                                <div class="file-order-toggle" id="fileOrderToggleContacts">
+                                    <label class="file-order-toggle__option" for="sendFilesFirstContacts">
+                                        <input id="sendFilesFirstContacts" type="radio" name="sendOrderContacts" value="files-first" checked>
+                                        <span>Primero archivos, luego texto (recomendado)</span>
+                                    </label>
+                                    <label class="file-order-toggle__option" for="sendTextFirstContacts">
+                                        <input id="sendTextFirstContacts" type="radio" name="sendOrderContacts" value="text-first">
+                                        <span>Primero texto, luego archivos</span>
+                                    </label>
+                                    <label class="file-order-toggle__option hidden" id="sendMessageSplitOptionContacts" for="sendMessageSplitContacts">
+                                        <input id="sendMessageSplitContacts" type="radio" name="sendOrderContacts" value="message-split">
+                                        <span>Primero mensaje 1, luego archivos, luego mensaje 2</span>
+                                    </label>
+                                </div>
+                                <div class="files-grid" data-files-container="contacts"></div>
+                            </div>
+
+                            <!-- 4. Dispatch Parameters -->
+                            <div class="composer-card">
+                                <div class="composer-card-header">
+                                    <h3>Parámetros de Despacho</h3>
+                                </div>
+                                <div class="dispatch-settings-grid">
+                                    <label class="field-block" for="riskProfileContacts">
+                                        <span>Perfil de cuenta</span>
+                                        <select id="riskProfileContacts">
+                                            <option value="new">Nueva (0-30 días)</option>
+                                            <option value="medium" selected>Madura (1-6 meses)</option>
+                                            <option value="mature">Veterana (+6 meses)</option>
+                                        </select>
+                                    </label>
+
+                                    <div class="field-block">
+                                        <span>Rango de delay (segundos)</span>
+                                        <div class="delay-range-inputs">
+                                            <select id="delayMin">
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
+                                                <option value="6">6</option>
+                                                <option value="7">7</option>
+                                                <option value="8">8</option>
+                                                <option value="9">9</option>
+                                                <option value="10">10</option>
+                                                <option value="11">11</option>
+                                                <option value="12" selected>12</option>
+                                                <option value="13">13</option>
+                                                <option value="14">14</option>
+                                                <option value="15">15</option>
+                                                <option value="16">16</option>
+                                                <option value="17">17</option>
+                                                <option value="18">18</option>
+                                                <option value="19">19</option>
+                                                <option value="20">20</option>
+                                                <option value="21">21</option>
+                                                <option value="22">22</option>
+                                                <option value="23">23</option>
+                                                <option value="24">24</option>
+                                            </select>
+                                            <span class="range-separator">a</span>
+                                            <select id="delayMax">
+                                                <option value="22" selected>22</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <label class="field-block" for="unitDelayMin">
+                                        <span>Delay entre unidades mínimo (s)</span>
+                                        <input id="unitDelayMin" type="number" min="0" max="30" step="1" value="1">
+                                    </label>
+
+                                    <label class="field-block" for="unitDelayMax">
+                                        <span>Delay entre unidades máximo (s)</span>
+                                        <input id="unitDelayMax" type="number" min="0" max="30" step="1" value="3">
+                                    </label>
+
+                                    <div class="field-block field-block--full compliance-block">
+                                        <label class="compliance-toggle" for="complianceModeContacts">
+                                            <input id="complianceModeContacts" type="checkbox" checked>
+                                            <span>Modo cumplimiento/seguridad activo (recomendado)</span>
+                                        </label>
+                                        <small class="hint">Aumenta pausas y valida números para reducir riesgo de bloqueos.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: SAFETY INSPECTOR -->
+                        <div class="dispatcher-inspector">
+                            <aside class="safety-inspector-card" aria-label="Inspector de seguridad pre-vuelo">
+                                <div class="inspector-header">
+                                    <h3>Inspector de Seguridad</h3>
+                                    <span class="status-badge status-badge--neutral">Pre-vuelo</span>
+                                </div>
+
+                                <div class="inspector-metrics-grid">
+                                    <div class="inspector-metric-tile">
+                                        <span>Destinatarios</span>
+                                        <strong id="inspectorRecipientsCount">0</strong>
+                                    </div>
+                                    <div class="inspector-metric-tile">
+                                        <span>Duración estimada</span>
+                                        <strong id="inspectorEstimatedDuration">0 seg</strong>
+                                    </div>
+                                </div>
+
+                                <div class="inspector-status-row">
+                                    <span class="inspector-status-label">Estado de seguridad</span>
+                                    <div id="inspectorSafetyStatus" class="status-badge status-badge--danger">● Audiencia requerida</div>
+                                </div>
+
+                                <div class="safety-checks-container">
+                                    <span class="safety-checks-title">Verificaciones Automáticas</span>
+                                    <div class="safety-checks-list">
+                                        <div id="checkAudience" class="safety-check-item check-failed">
+                                            <span class="check-icon">✕</span>
+                                            <span class="check-label">Ningún destinatario seleccionado</span>
+                                        </div>
+                                        <div id="checkVolume" class="safety-check-item check-passed">
+                                            <span class="check-icon">✓</span>
+                                            <span class="check-label">Volumen dentro del límite seguro</span>
+                                        </div>
+                                        <div id="checkDelay" class="safety-check-item check-passed">
+                                            <span class="check-icon">✓</span>
+                                            <span class="check-label">Delay seguro y aleatorio</span>
+                                        </div>
+                                        <div id="checkDuplicates" class="safety-check-item check-passed">
+                                            <span class="check-icon">✓</span>
+                                            <span class="check-label">Sin reenvíos detectados hoy</span>
+                                        </div>
+                                        <div id="checkCompliance" class="safety-check-item check-passed">
+                                            <span class="check-icon">✓</span>
+                                            <span class="check-label">Protección anti-bloqueo activa</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="inspector-advice-box">
+                                    <span class="inspector-advice-title">Evaluación de Riesgo</span>
+                                    <p id="riskReasonContacts" class="inspector-advice-desc">Selecciona destinatarios para calcular el riesgo preventivo.</p>
+                                    <p id="safeSuggestionContacts" class="inspector-advice-desc inspector-advice-desc--suggestion">Sugerencia: mantén el volumen por tanda recomendado.</p>
+                                    <small id="riskScoreContacts" class="inspector-risk-score">Puntaje de riesgo: 8/100</small>
+                                    <span id="riskIndicatorContacts" class="risk-indicator risk-indicator--yellow hidden">AMARILLO</span>
+                                    <small id="targetCounterContacts" class="hidden">0 seleccionados</small>
+                                </div>
+
+                                <div class="inspector-actions">
+                                    <button id="applySafeConfigContacts" class="btn btn-secondary btn-optimize-safe" type="button">Optimizar configuración segura</button>
+                                    <button id="clearSentContacts" class="btn-ghost ghost-button--tiny btn-center" type="button">Quitar usados en las últimas 24h</button>
+                                    <button id="enviarMensajes" class="btn btn-primary btn-start-campaign" type="button" disabled>INICIAR CAMPAÑA</button>
+                                    <button id="forzarEnvioMensajes" class="btn btn-danger btn-force-send hidden" type="button">Forzar envío bajo mi responsabilidad</button>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tab-panel" data-panel="groups" id="gruposContent">
+                <div class="campaign-dispatcher">
+                    <div class="dispatcher-header">
+                        <div class="dispatcher-title-group">
+                            <h2>Operaciones de Grupos</h2>
+                            <p>Selección, composición y despacho seguro de campañas para grupos de WhatsApp con inspector de pre-vuelo.</p>
+                        </div>
+                    </div>
+
+                    <div class="dispatcher-grid">
+                        <!-- LEFT COLUMN: COMPOSER FOR GROUPS -->
+                        <div class="dispatcher-composer">
+                            <!-- 1. Group Audience Card -->
+                            <div class="composer-card">
+                                <div class="composer-card-header">
+                                    <h3>Audiencia de Grupos</h3>
+                                </div>
+
+                                <label class="field-block" for="groupSearchInput">
+                                    <span>Buscar grupos por nombre</span>
+                                    <input id="groupSearchInput" class="group-search-input" type="text" placeholder="🔍 Escribe el nombre del grupo...">
+                                    <small id="groupFilterInfo" class="hint">Mostrando todos los grupos.</small>
+                                    <div class="group-filter-actions">
+                                        <button id="selectFilteredGroups" class="ghost-button ghost-button--tiny" type="button">Seleccionar todos los grupos del filtro</button>
+                                    </div>
+                                </label>
+
+                                <label class="field-block" for="gruposChecklist">
+                                    <span>Grupos disponibles</span>
+                                    <div id="gruposChecklist" class="group-checklist" aria-live="polite"></div>
+                                    <small class="hint">Haz clic para seleccionar o deseleccionar cada grupo.</small>
+                                </label>
+
+                                <section class="field-block">
+                                    <div class="field-headline">
+                                        <span>Exportar integrantes de grupo</span>
+                                        <small id="groupMembersInfo">Selecciona un grupo y el formato de descarga.</small>
+                                    </div>
+                                    <select id="groupExportSelect" class="group-export-select">
+                                        <option value="">Selecciona un grupo...</option>
+                                    </select>
+                                    <div class="export-actions">
+                                        <button id="exportGroupExcel" class="ghost-button" type="button">Exportar Excel</button>
+                                        <button id="exportGroupCsv" class="ghost-button" type="button">Exportar CSV</button>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <!-- 2. Message Composer for Groups -->
+                            <div class="composer-card">
+                                <div class="composer-card-header">
+                                    <h3>Mensajes para Grupos</h3>
+                                    <small>Hasta 3 mensajes secuenciales</small>
+                                </div>
+
+                                <div class="message-tabs" id="messageTabsGroups">
+                                    <button type="button" class="message-tab is-active" data-message-tab="groups" data-message-index="1">Mensaje 1</button>
+                                    <button type="button" class="message-tab hidden" data-message-tab="groups" data-message-index="2">
+                                        Mensaje 2
+                                        <span class="message-tab__close" role="button" tabindex="0" data-close-message-tab="groups" data-message-index="2">x</span>
+                                    </button>
+                                    <button type="button" class="message-tab hidden" data-message-tab="groups" data-message-index="3">
+                                        Mensaje 3
+                                        <span class="message-tab__close" role="button" tabindex="0" data-close-message-tab="groups" data-message-index="3">x</span>
+                                    </button>
+                                    <button type="button" class="message-tab message-tab--add" data-add-message-tab="groups" aria-label="Agregar mensaje">+</button>
+                                </div>
+
+                                <div class="message-panes" id="messagePanesGroups">
+                                    <textarea id="mensajeGrupo" data-message-pane="groups" data-message-index="1" placeholder="Escribe aquí el mensaje 1 para tus grupos..."></textarea>
+                                    <textarea id="mensajeGrupo2" data-message-pane="groups" data-message-index="2" class="hidden" placeholder="Escribe aquí el mensaje 2 (opcional)..."></textarea>
+                                    <textarea id="mensajeGrupo3" data-message-pane="groups" data-message-index="3" class="hidden" placeholder="Escribe aquí el mensaje 3 (opcional)..."></textarea>
+                                </div>
+
+                                <div class="message-variables" id="messageVariablesGroups">
+                                    <small class="hint">Variables rápidas:</small>
+                                    <div class="message-variables__chips">
+                                        <button type="button" class="ghost-button ghost-button--tiny" data-insert-variable="groups" data-variable-token="{{grupo}}">Nombre del grupo</button>
+                                        <button type="button" class="ghost-button ghost-button--tiny" data-insert-variable="groups" data-variable-token="{{etiqueta_aleatoria}}">Etiqueta aleatoria</button>
+                                    </div>
+                                    <div class="message-variable-builder">
+                                        <label for="customVarNameGroups">Variable personalizada</label>
+                                        <input id="customVarNameGroups" type="text" placeholder="ej: campaña">
+                                        <input id="customVarValueGroups" type="text" placeholder="ej: lanzamiento">
+                                        <button id="addCustomVarGroups" class="ghost-button ghost-button--tiny" type="button">Agregar variable</button>
+                                    </div>
+                                    <label for="randomTagsGroups">Opciones para {{etiqueta_aleatoria}} (separadas por coma)</label>
+                                    <input id="randomTagsGroups" type="text" placeholder="alerta, seguimiento, recordatorio">
+                                    <div id="customVarsListGroups" class="custom-vars-list" aria-live="polite"></div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Attachments Card for Groups -->
+                            <div class="composer-card">
+                                <div class="composer-card-header">
+                                    <h3>Archivos Adjuntos</h3>
+                                    <button id="selectFilesGrupo" class="ghost-button ghost-button--tiny" type="button">+ Adjuntar archivos</button>
+                                </div>
+
+                                <div class="file-order-toggle" id="fileOrderToggleGroups">
+                                    <label class="file-order-toggle__option" for="sendFilesFirstGroups">
+                                        <input id="sendFilesFirstGroups" type="radio" name="sendOrderGroups" value="files-first" checked>
+                                        <span>Primero archivos, luego texto (recomendado)</span>
+                                    </label>
+                                    <label class="file-order-toggle__option" for="sendTextFirstGroups">
+                                        <input id="sendTextFirstGroups" type="radio" name="sendOrderGroups" value="text-first">
+                                        <span>Primero texto, luego archivos</span>
+                                    </label>
+                                    <label class="file-order-toggle__option hidden" id="sendMessageSplitOptionGroups" for="sendMessageSplitGroups">
+                                        <input id="sendMessageSplitGroups" type="radio" name="sendOrderGroups" value="message-split">
+                                        <span>Primero mensaje 1, luego archivos, luego mensaje 2</span>
+                                    </label>
+                                </div>
+
+                                <div class="files-grid" data-files-container="groups"></div>
+                            </div>
+
+                            <!-- 4. Dispatch Parameters Card for Groups -->
+                            <div class="composer-card">
+                                <div class="composer-card-header">
+                                    <h3>Parámetros de Despacho</h3>
+                                </div>
+
+                                <div class="dispatch-settings-grid">
+                                    <label class="field-block" for="riskProfileGroups">
+                                        <span>Perfil de cuenta</span>
+                                        <select id="riskProfileGroups">
+                                            <option value="new">Nueva (0-30 días)</option>
+                                            <option value="medium" selected>Madura (1-6 meses)</option>
+                                            <option value="mature">Veterana (+6 meses)</option>
+                                        </select>
+                                    </label>
+
+                                    <div class="field-block">
+                                        <span>Rango de delay entre mensajes (segundos / ms)</span>
+                                        <div class="delay-range-inputs">
+                                            <select id="delayMinGrupo">
+                                                <option value="2" selected>2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
+                                                <option value="6">6</option>
+                                                <option value="7">7</option>
+                                                <option value="8">8</option>
+                                                <option value="9">9</option>
+                                                <option value="10">10</option>
+                                                <option value="11">11</option>
+                                                <option value="12">12</option>
+                                                <option value="13">13</option>
+                                                <option value="14">14</option>
+                                                <option value="15">15</option>
+                                                <option value="16">16</option>
+                                                <option value="17">17</option>
+                                                <option value="18">18</option>
+                                                <option value="19">19</option>
+                                                <option value="20">20</option>
+                                                <option value="21">21</option>
+                                                <option value="22">22</option>
+                                                <option value="23">23</option>
+                                                <option value="24">24</option>
+                                            </select>
+                                            <span class="range-separator">a</span>
+                                            <select id="delayMaxGrupo">
+                                                <option value="8" selected>8</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <label class="field-block" for="unitDelayMinGrupo">
+                                        <span>Delay entre unidades mínimo (s / 1000 ms)</span>
+                                        <input id="unitDelayMinGrupo" type="number" min="0" max="30" step="1" value="1">
+                                    </label>
+
+                                    <label class="field-block" for="unitDelayMaxGrupo">
+                                        <span>Delay entre unidades máximo (s / 3000 ms)</span>
+                                        <input id="unitDelayMaxGrupo" type="number" min="0" max="30" step="1" value="3">
+                                    </label>
+
+                                    <div class="field-block field-block--full compliance-block">
+                                        <label class="compliance-toggle" for="complianceModeGroups">
+                                            <input id="complianceModeGroups" type="checkbox" checked>
+                                            <span>Modo cumplimiento/seguridad activo (recomendado)</span>
+                                        </label>
+                                        <small class="hint">Aplica pausas largas periódicas para proteger la sesión.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: PREFLIGHT INSPECTOR FOR GROUPS -->
+                        <div class="dispatcher-inspector">
+                            <aside class="safety-inspector-card" aria-label="Inspector de seguridad pre-vuelo para grupos">
+                                <div class="inspector-header">
+                                    <h3>Inspector de Pre-vuelo</h3>
+                                    <span class="status-badge status-badge--neutral">Grupos</span>
+                                </div>
+
+                                <div class="inspector-metrics-grid">
+                                    <div class="inspector-metric-tile">
+                                        <span>Destinatarios</span>
+                                        <strong id="inspectorRecipientsCountGroups">0 grupos</strong>
+                                    </div>
+                                    <div class="inspector-metric-tile">
+                                        <span>Duración estimada</span>
+                                        <strong id="inspectorEstimatedDurationGroups">0 seg</strong>
+                                    </div>
+                                </div>
+
+                                <div class="inspector-status-row">
+                                    <span class="inspector-status-label">Estado de seguridad</span>
+                                    <div id="inspectorSafetyStatusGroups" class="status-badge status-badge--danger">● Audiencia requerida</div>
+                                </div>
+
+                                <div class="safety-checks-container">
+                                    <span class="safety-checks-title">Verificaciones Automáticas</span>
+                                    <div class="safety-checks-list">
+                                        <div id="checkAudienceGroups" class="safety-check-item check-failed">
+                                            <span class="check-icon">✕</span>
+                                            <span class="check-label">Ningún destinatario seleccionado</span>
+                                        </div>
+                                        <div id="checkVolumeGroups" class="safety-check-item check-passed">
+                                            <span class="check-icon">✓</span>
+                                            <span class="check-label">Volumen dentro del límite seguro</span>
+                                        </div>
+                                        <div id="checkDelayGroups" class="safety-check-item check-passed">
+                                            <span class="check-icon">✓</span>
+                                            <span class="check-label">Delay seguro y aleatorio</span>
+                                        </div>
+                                        <div id="checkDuplicatesGroups" class="safety-check-item check-passed">
+                                            <span class="check-icon">✓</span>
+                                            <span class="check-label">Sin reenvíos detectados hoy</span>
+                                        </div>
+                                        <div id="checkComplianceGroups" class="safety-check-item check-passed">
+                                            <span class="check-icon">✓</span>
+                                            <span class="check-label">Protección anti-bloqueo activa</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="inspector-advice-box">
+                                    <span class="inspector-advice-title">Evaluación de Riesgo</span>
+                                    <p id="riskReasonGroups" class="inspector-advice-desc">Selecciona grupos para calcular el riesgo preventivo.</p>
+                                    <p id="safeSuggestionGroups" class="inspector-advice-desc inspector-advice-desc--suggestion">Sugerencia: mantén el volumen por tanda recomendado.</p>
+                                    <small id="riskScoreGroups" class="inspector-risk-score">Puntaje de riesgo: --</small>
+                                    <span id="riskIndicatorGroups" class="risk-indicator risk-indicator--yellow hidden">AMARILLO</span>
+                                    <small id="targetCounterGroups" class="hidden">0 seleccionados</small>
+                                </div>
+
+                                <div class="inspector-actions">
+                                    <button id="applySafeConfigGroups" class="btn btn-secondary btn-optimize-safe" type="button">Optimizar configuración</button>
+                                    <button id="clearSentGroups" class="btn-ghost ghost-button--tiny btn-center" type="button">Quitar ya enviados hoy</button>
+                                    <button id="enviarGrupos" class="btn btn-primary btn-start-campaign" type="button" disabled>Enviar a grupos</button>
+                                    <button id="forzarEnvioGrupos" class="btn btn-danger btn-force-send hidden" type="button">Forzar envío bajo mi responsabilidad</button>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <section class="tab-panel" data-panel="group-import" id="importarGruposContent">
+                <div class="panel-header">
+                    <h2>Crear grupo desde Excel</h2>
+                    <p>Crea un unico grupo de WhatsApp utilizando los participantes de un archivo Excel.</p>
+                </div>
+
+                <div class="group-import-layout">
+                    <label class="field-block group-import-name-card" for="groupImportName">
+                        <span>Nombre del grupo</span>
+                        <input id="groupImportName" type="text" maxlength="100" placeholder="Curso de Panaderia Basica - Agosto 2026">
+                        <small class="hint">El nombre es obligatorio para crear el grupo.</small>
+                    </label>
+                    <section class="field-block group-import-file-card">
+                        <div class="field-headline">
+                            <span>Archivo Excel</span>
+                            <small>Formatos: .xlsx, .xls o .csv</small>
+                        </div>
+                        <button id="selectGroupImportFileButton" class="ghost-button" type="button">Seleccionar archivo</button>
+                        <p id="groupImportFileName" class="group-import-file-name">Selecciona un archivo Excel para comenzar.</p>
+                        <p id="groupImportFileStatus" class="hint">Esperando archivo.</p>
+                        <div class="group-import-actions">
+                            <button id="analyzeGroupImportButton" class="ghost-button" type="button" disabled>Analizar archivo</button>
+                            <button id="runGroupImportButton" class="send-button" type="button" disabled>Crear grupo</button>
+                        </div>
+                    </section>
+
+                    <section class="field-block group-import-summary" aria-live="polite">
+                        <div class="field-headline">
+                            <span>Resumen del archivo</span>
+                            <small id="groupImportAnalysisStatus">Sin analizar</small>
+                        </div>
+                        <div class="group-import-metrics">
+                            <div><strong id="groupImportParticipantsFound">0</strong><span>Participantes</span></div>
+                            <div><strong id="groupImportValidRows">0</strong><span>Filas validas</span></div>
+                            <div><strong id="groupImportInvalidRows">0</strong><span>Filas con errores</span></div>
+                        </div>
+                        <p id="groupImportProgress" class="group-import-progress">Selecciona un archivo Excel.</p>
+                        <div id="groupImportPreview" class="group-import-preview"></div>
+                    </section>
+                </div>
+
+                <section id="groupImportResults" class="field-block group-import-results hidden" aria-live="polite">
+                    <div class="field-headline">
+                        <span>Resultado del proceso</span>
+                        <small id="groupImportResultStatus"></small>
+                    </div>
+                    <div id="groupImportResultMetrics" class="group-import-result-metrics"></div>
+                    <div id="groupImportResultGroups" class="group-import-result-groups"></div>
+                    <section id="groupImportDiagnostics" class="group-import-diagnostics" aria-live="polite"></section>
+                    <button id="exportGroupImportResultsButton" class="ghost-button" type="button">Guardar Excel de resultados</button>
+                </section>
+            </section>
+
+
+
+            <section class="tab-panel" data-panel="statistics" id="estadisticasContent">
+                <section class="stats-dashboard" aria-label="Estadisticas de mensajeria">
+                    <div class="stats-dashboard__header">
+                        <div>
+                            <h2>Estadisticas en vivo</h2>
+                            <p id="statsHint">Resumen persistente de actividad de mensajeria.</p>
+                        </div>
+                        <div class="stats-actions">
+                            <button id="refreshStatsButton" class="ghost-button" type="button">Actualizar</button>
+                            <button id="exportStatsExcelButton" class="ghost-button" type="button">Exportar reporte Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <article class="stats-card">
+                            <p class="stats-card__label">Hoy</p>
+                            <p id="statsTodayUnits" class="stats-card__value">0</p>
+                            <small id="statsReferenceDay" class="hint">Fecha: --</small>
+                        </article>
+
+                        <article class="stats-card">
+                            <p class="stats-card__label">Semana actual</p>
+                            <p id="statsWeekUnits" class="stats-card__value">0</p>
+                            <small class="hint">Unidades acumuladas</small>
+                        </article>
+
+                        <article class="stats-card">
+                            <p class="stats-card__label">Mes actual</p>
+                            <p id="statsMonthUnits" class="stats-card__value">0</p>
+                            <small class="hint">Unidades acumuladas</small>
+                        </article>
+
+                        <article class="stats-card">
+                            <p class="stats-card__label">Distribucion</p>
+                            <p id="statsPctContacts" class="stats-card__value">0%</p>
+                            <small id="statsPctGroups" class="hint">Grupos: 0%</small>
+                        </article>
+                    </div>
+
+                    <div class="stats-details-grid">
+                        <article class="stats-detail-card">
+                            <h3>Top destinos</h3>
+                            <p>Contacto: <strong id="statsTopContact">-</strong></p>
+                            <p>Grupo: <strong id="statsTopGroup">-</strong></p>
+                        </article>
+
+                        <article class="stats-detail-card">
+                            <h3>Records</h3>
+                            <p>Dia: <strong id="statsTopDayRecord">-</strong></p>
+                            <p>Semana: <strong id="statsTopWeekRecord">-</strong></p>
+                        </article>
+                    </div>
+
+                    <small id="statsUpdatedAt" class="hint">Ultima actualizacion: --</small>
+                </section>
+
+                <div class="panel-header history-panel-header">
+                    <div>
+                        <h2>Historial de mensajeria</h2>
+                        <p>Vista detallada de tendencias diarias, semanales y mensuales.</p>
+                    </div>
+                    <label class="history-range-label" for="historyRangeDays">
+                        Rango
+                        <select id="historyRangeDays">
+                            <option value="today">Hoy</option>
+                            <option value="last-7">Ultimos 7 dias</option>
+                            <option value="last-30" selected>Ultimos 30 dias</option>
+                            <option value="custom">Rango personalizado</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="history-custom-range" id="historyCustomRange" hidden>
+                    <label for="historyStartDate">Desde
+                        <input id="historyStartDate" type="date">
+                    </label>
+                    <label for="historyEndDate">Hasta
+                        <input id="historyEndDate" type="date">
+                    </label>
+                    <button id="applyHistoryRange" class="ghost-button" type="button">Aplicar rango</button>
+                </div>
+
+                <div class="stats-history-grid">
+                    <article class="stats-table-section stats-chart-card">
+                        <div class="field-headline">
+                            <span>Tendencia diaria</span>
+                            <small>Unidades = mensajes + adjuntos | Interacciones = envios ejecutados</small>
+                        </div>
+                        <canvas id="historyTrendChart" height="120" aria-label="Grafico de tendencia diaria"></canvas>
+                    </article>
+
+                    <article class="stats-table-section stats-chart-card">
+                        <div class="field-headline">
+                            <span>Tendencia semanal</span>
+                            <small>Compara unidades e interacciones acumuladas por semana</small>
+                        </div>
+                        <canvas id="historyWeeklyChart" height="120" aria-label="Grafico de tendencia semanal"></canvas>
+                    </article>
+                </div>
+
+                <div class="stats-history-grid">
+                    <article class="stats-detail-card">
+                        <h3>Chats alcanzados</h3>
+                        <p>Total de chats: <strong id="statsUniqueTotal">0</strong></p>
+                        <p>Contactos: <strong id="statsUniqueContacts">0</strong></p>
+                        <p>Grupos: <strong id="statsUniqueGroups">0</strong></p>
+                    </article>
+
+                    <article class="stats-detail-card">
+                        <h3>Top destinos</h3>
+                        <p>Contacto top: <strong id="statsTopContactDetail">-</strong></p>
+                        <p>Grupo top: <strong id="statsTopGroupDetail">-</strong></p>
+                    </article>
+                </div>
+
+                <div class="stats-table-section">
+                    <div class="field-headline">
+                        <span>Ultimos dias</span>
+                        <small>Unidades = mensajes + adjuntos | Interacciones = envios</small>
+                    </div>
+                    <div class="stats-table-wrapper">
+                        <table class="stats-table" id="statsDailyTable">
+                            <thead>
+                                <tr>
+                                    <th>Dia</th>
+                                    <th>Unidades</th>
+                                    <th>Interacciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsDailyBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="stats-history-grid">
+                    <div class="stats-table-section">
+                        <div class="field-headline">
+                            <span>Semanas</span>
+                            <small>Resumen acumulado</small>
+                        </div>
+                        <div class="stats-table-wrapper">
+                            <table class="stats-table" id="statsWeeklyTable">
+                                <thead>
+                                    <tr>
+                                        <th>Semana</th>
+                                        <th>Unidades</th>
+                                        <th>Interacciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statsWeeklyBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="stats-table-section">
+                        <div class="field-headline">
+                            <span>Meses</span>
+                            <small>Resumen acumulado</small>
+                        </div>
+                        <div class="stats-table-wrapper">
+                            <table class="stats-table" id="statsMonthlyTable">
+                                <thead>
+                                    <tr>
+                                        <th>Mes</th>
+                                        <th>Unidades</th>
+                                        <th>Interacciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statsMonthlyBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tab-panel" data-panel="scheduling" id="programacionContent">
+                <div class="panel-header">
+                    <h2>Programacion de mensajes</h2>
+                    <p>Agenda mensajes para enviarlos en fecha y hora exacta.</p>
+                </div>
+
+                <div class="form-grid">
+                    <section class="field-block field-block--full">
+                        <div class="field-headline">
+                            <span>Destino del mensaje</span>
+                            <small>Selecciona contacto o grupo</small>
+                        </div>
+
+                        <div class="schedule-target-grid">
+                            <label for="scheduleTargetType">
+                                Tipo
+                                <select id="scheduleTargetType">
+                                    <option value="contacts" selected>Contacto</option>
+                                    <option value="groups">Grupo</option>
+                                </select>
+                            </label>
+
+                            <label for="scheduleTargetId">
+                                Destino
+                                <select id="scheduleTargetId">
+                                    <option value="">Selecciona...</option>
+                                </select>
+                            </label>
+                        </div>
+                    </section>
+
+                    <label class="field-block field-block--full" for="scheduleMessageText">
+                        <span>Mensaje programado</span>
+                        <textarea id="scheduleMessageText" placeholder="Escribe el mensaje que sera enviado automaticamente..."></textarea>
+                    </label>
+
+                    <section class="field-block field-block--full">
+                        <div class="field-headline">
+                            <span>Archivos adjuntos</span>
+                            <small>Hasta 3 archivos por programacion</small>
+                        </div>
+                        <button id="selectFilesSchedule" class="ghost-button" type="button">Seleccionar archivos</button>
+                        <div class="file-order-toggle" id="fileOrderToggleSchedule">
+                            <label class="file-order-toggle__option" for="sendFilesFirstSchedule">
+                                <input id="sendFilesFirstSchedule" type="radio" name="sendOrderSchedule" value="files-first" checked>
+                                <span>Primero archivos, luego texto</span>
+                            </label>
+                            <label class="file-order-toggle__option" for="sendTextFirstSchedule">
+                                <input id="sendTextFirstSchedule" type="radio" name="sendOrderSchedule" value="text-first">
+                                <span>Primero texto, luego archivos</span>
+                            </label>
+                        </div>
+                        <div class="files-grid" data-files-container="schedule"></div>
+                    </section>
+
+                    <section class="field-block">
+                        <span>Fecha y hora de envio</span>
+                        <input id="scheduleDatetime" type="datetime-local">
+                    </section>
+
+                    <section class="field-block">
+                        <span>Delay base (simulacion)</span>
+                        <div class="schedule-delay-inline">
+                            <label for="scheduleDelayMin">Min
+                                <select id="scheduleDelayMin">
+                                    <option value="3" selected>3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                </select>
+                            </label>
+                            <label for="scheduleDelayMax">Max
+                                <select id="scheduleDelayMax">
+                                    <option value="6" selected>6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                </select>
+                            </label>
+                        </div>
+                    </section>
+
+                    <div class="send-actions field-block--full">
+                        <button id="createScheduleButton" class="send-button" type="button">Programar mensaje</button>
+                        <button id="refreshScheduleButton" class="ghost-button" type="button">Actualizar lista</button>
+                    </div>
+
+                    <section class="field-block field-block--full">
+                        <div class="field-headline">
+                            <span>Mensajes pendientes</span>
+                            <small id="scheduledCountHint">0 programados</small>
+                        </div>
+                        <div id="scheduledMessagesList" class="scheduled-list" aria-live="polite"></div>
+                    </section>
+                </div>
+            </section>
+
+            <section class="tab-panel hidden" data-panel="admin" id="adminContent">
+                <div class="panel-header history-panel-header">
+                    <div>
+                        <h2>Consola admin</h2>
+                        <p>Métricas de dispositivos y auditoría del sistema.</p>
+                    </div>
+                    <div class="admin-actions-row">
+                        <button id="adminBackupHistoryButton" class="ghost-button" type="button">Respaldar historial</button>
+                        <button id="adminRefreshButton" class="ghost-button" type="button">Actualizar admin</button>
+                    </div>
+                </div>
+
+                <small id="adminStatusHint" class="hint">Sincroniza para ver metricas actualizadas del backend.</small>
+
+                <div class="admin-counters-grid">
+                    <article class="stats-card">
+                        <p class="stats-card__label">Usuarios</p>
+                        <p id="adminCounterUsers" class="stats-card__value">0</p>
+                    </article>
+                    <article class="stats-card">
+                        <p class="stats-card__label">Sesiones activas</p>
+                        <p id="adminCounterActiveLicenses" class="stats-card__value">0</p>
+                    </article>
+                    <article class="stats-card">
+                        <p class="stats-card__label">Dispositivos activos</p>
+                        <p id="adminCounterActiveDevices" class="stats-card__value">0</p>
+                    </article>
+                    <article class="stats-card">
+                        <p class="stats-card__label">Eventos</p>
+                        <p id="adminCounterEvents" class="stats-card__value">0</p>
+                    </article>
+                </div>
+
+                <div class="admin-grid">
+                    <section class="stats-table-section">
+                        <div class="field-headline">
+                            <span>Sesiones</span>
+                            <small>Historial de accesos</small>
+                        </div>
+                        <div id="adminLicensesList" class="admin-list" aria-live="polite"></div>
+                    </section>
+
+                    <section class="stats-table-section">
+                        <div class="field-headline">
+                            <span>Dispositivos</span>
+                            <small>Control remoto de sesiones</small>
+                        </div>
+                        <div id="adminDevicesList" class="admin-list" aria-live="polite"></div>
+                    </section>
+                </div>
+
+                <section class="stats-table-section">
+                    <div class="field-headline">
+                        <span>Auditoria reciente</span>
+                        <small>Ultimos 50 eventos</small>
+                    </div>
+                    <div id="adminEventsList" class="admin-list" aria-live="polite"></div>
+                </section>
+
+                <section class="stats-table-section">
+                    <div class="field-headline">
+                        <span>Respaldos de historial</span>
+                        <small>Ultimos 200 respaldos disponibles para descarga</small>
+                    </div>
+                    <div class="backup-filters">
+                        <label for="adminBackupSearch">
+                            Buscar por ID
+                            <input id="adminBackupSearch" type="text" placeholder="Ej: 6f6f0f2f...">
+                        </label>
+                        <label for="adminBackupStatus">
+                            Estado
+                            <select id="adminBackupStatus">
+                                <option value="all" selected>Todos</option>
+                                <option value="completed">Completado</option>
+                                <option value="in_progress">En progreso</option>
+                            </select>
+                        </label>
+                        <label for="adminBackupFrom">
+                            Desde
+                            <input id="adminBackupFrom" type="date">
+                        </label>
+                        <label for="adminBackupTo">
+                            Hasta
+                            <input id="adminBackupTo" type="date">
+                        </label>
+                        <button id="adminBackupClearFilters" class="ghost-button ghost-button--tiny" type="button">Limpiar filtros</button>
+                    </div>
+                    <div class="backup-results-bar">
+                        <small id="adminBackupResultsHint" class="hint">0 respaldos</small>
+                        <div class="backup-pagination-actions">
+                            <button id="adminBackupPrevPage" class="ghost-button ghost-button--tiny" type="button">Anterior</button>
+                            <small id="adminBackupPageHint" class="hint">Pagina 1 de 1</small>
+                            <button id="adminBackupNextPage" class="ghost-button ghost-button--tiny" type="button">Siguiente</button>
+                        </div>
+                    </div>
+                    <div id="adminBackupsList" class="admin-list" aria-live="polite"></div>
+                </section>
+            </section>
+            
+        </main>
+
+        <!-- Task Dock (Decoupled background progress monitor) -->
+        <div id="taskDock" class="task-dock hidden" data-state="hidden">
+            <div class="task-dock-meta">
+                <span data-dock-status class="status-badge status-badge--info">En ejecución</span>
+                <strong data-dock-title class="task-dock-title">Campaña activa</strong>
+            </div>
+            <div class="task-dock-progress-area">
+                <div class="task-dock-progress-labels">
+                    <span data-dock-current>Enviando destinatario...</span>
+                    <strong data-dock-percent>0%</strong>
+                </div>
+                <div class="progress-bar-track" data-dock-track>
+                    <div class="progress-bar-fill" data-dock-fill></div>
+                </div>
+            </div>
+            <div data-dock-timer class="task-dock-timer hidden">
+                <span data-dock-timer-text>Pausa: 0s</span>
+            </div>
+            <div class="task-dock-actions">
+                <button type="button" class="btn-ghost ghost-button--tiny" data-dock-action="pause">Pausar</button>
+                <button type="button" class="btn-danger ghost-button--tiny" data-dock-action="cancel">Cancelar</button>
+                <button type="button" class="btn-ghost ghost-button--tiny hidden" data-dock-action="close">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div id="qrModal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal-card modal-card--qr">
+            <!-- Modo 1: Presentación del QR -->
+            <div id="qrContentArea">
+                <h3 class="qr-modal-title">Escanea el código QR</h3>
+                <p class="qr-modal-desc">Abre WhatsApp en tu teléfono (Dispositivos vinculados > Vincular un dispositivo) y escanea para autorizar esta sesión.</p>
+                <div id="qrContainer" class="qr-surface">
+                    <span>Esperando código QR...</span>
+                </div>
+            </div>
+
+            <!-- Modo 2: QR Escaneado y Sincronización de Sesión -->
+            <div id="sessionLoadingArea" class="session-loading-box hidden">
+                <div class="session-loading-header">
+                    <span class="session-loading-badge-icon">✅</span>
+                    <h3 id="sessionLoadingTitle" class="session-loading-title">¡Código QR Escaneado!</h3>
+                </div>
+                
+                <p id="sessionLoadingSubtitle" class="session-loading-subtitle">Autenticando WhatsApp y preparando su aplicación...</p>
+
+                <div class="sync-warning-banner">
+                    <div class="sync-warning-icon">⚠️</div>
+                    <div class="sync-warning-text">
+                        <strong>POR FAVOR NO CIERRE EL PROGRAMA NI DESCONECTE SU EQUIPO</strong>
+                        <span>Estamos descargando y sincronizando sus chats, grupos y contactos en segundo plano.</span>
+                    </div>
+                </div>
+
+                <div class="session-loading-progress-box">
+                    <div class="session-loading-spinner-ring"></div>
+                    <span id="sessionLoadingStatusText" class="session-loading-status-text">Autenticando WhatsApp...</span>
+                </div>
+
+                <!-- Barra de progreso real de carga -->
+                <div class="session-progress-track">
+                    <div id="sessionProgressFill" class="session-progress-fill"></div>
+                </div>
+                <div id="sessionLoadingPercentText" class="session-progress-percent">0%</div>
+
+                <div class="session-sync-details">
+                    <span id="sessionSyncCounter">Sincronizando información...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="progressModal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <h3>Procesando envio</h3>
+            <p id="progressText">Preparando envio...</p>
+
+            <div class="progress-counts-badge">
+                <span id="progressCounts" class="progress-counts">Mensajes: 0 de 0 (0 exitosos, 0 fallidos)</span>
+            </div>
+
+            <p id="progressDelay" class="progress-delay">Delay activo: --</p>
+            <p id="progressSecurity" class="progress-security">Pausa de seguridad: --</p>
+
+            <div class="progress-track">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <p id="progressPercent" class="progress-percent">0%</p>
+            <p id="progressCurrent" class="progress-current">Esperando inicio...</p>
+
+            <div id="progressTimerBox" class="progress-timer-box hidden">
+                <span class="progress-timer-icon">⏱️</span>
+                <span id="progressTimerText" class="progress-timer-text">Esperando 0s para enviar...</span>
+            </div>
+
+            <p id="progressSummary" class="progress-summary"></p>
+
+            <div class="progress-actions">
+                <button id="cancelSendBtn" class="cancel-send-button" type="button">
+                    <span class="cancel-send-icon">🛑</span>
+                    <span>Cancelar Envío</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customConfirmModal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal-card modal-card--confirm">
+            <div class="confirm-modal-header">
+                <div id="confirmModalBadge" class="confirm-modal-badge confirm-modal-badge--warning">
+                    <span id="confirmModalIcon" class="confirm-modal-icon">⚠️</span>
+                    <span id="confirmModalBadgeText">Advertencia de Reenvío</span>
+                </div>
+                <h3 id="confirmModalTitle" class="confirm-modal-title">¿Deseas reenviar mensajes a estos contactos?</h3>
+                <p id="confirmModalSubtitle" class="confirm-modal-subtitle">Se detectaron destinatarios que ya fueron contactados hoy.</p>
+            </div>
+
+            <div id="confirmModalStatsGrid" class="confirm-stats-grid">
+                <div class="confirm-stat-card">
+                    <span class="confirm-stat-label">Total Seleccionados</span>
+                    <strong id="confirmStatTotal" class="confirm-stat-value">0</strong>
+                </div>
+                <div class="confirm-stat-card confirm-stat-card--highlight">
+                    <span class="confirm-stat-label">Contactados Hoy</span>
+                    <strong id="confirmStatAlreadySent" class="confirm-stat-value">0</strong>
+                </div>
+                <div class="confirm-stat-card">
+                    <span class="confirm-stat-label">Sin Enviar Hoy</span>
+                    <strong id="confirmStatNewToday" class="confirm-stat-value">0</strong>
+                </div>
+            </div>
+
+            <div class="confirm-modal-body">
+                <p id="confirmModalDescription" class="confirm-modal-description">
+                    Enviar mensajes repetidos el mismo día a los mismos números incrementa considerablemente el riesgo de reportes o bloqueos preventivos por parte de WhatsApp.
+                </p>
+
+                <div id="confirmModalAdviceBox" class="confirm-advice-box">
+                    <span class="confirm-advice-icon">💡</span>
+                    <p id="confirmModalRecommendation" class="confirm-advice-text">
+                        Sugerencia: Puedes cancelar esta acción y presionar el botón <strong>"Quitar usados hoy"</strong> para limpiar la lista antes de enviar.
+                    </p>
+                </div>
+            </div>
+
+            <div class="confirm-modal-actions">
+                <button id="confirmModalCancelBtn" class="confirm-btn confirm-btn--cancel" type="button">
+                    <span>🛑 Cancelar y Revisar</span>
+                </button>
+                <button id="confirmModalAcceptBtn" class="confirm-btn confirm-btn--accept" type="button">
+                    <span>▶️ Continuar de Todos Modos</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <section id="toastContainer" class="toast-container" aria-live="polite"></section>
+
+    <script src="js/renderer.js"></script>
+</body>
+</html>
