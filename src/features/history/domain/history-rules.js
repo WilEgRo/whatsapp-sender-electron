@@ -2,9 +2,28 @@
  * WhatsApp Sender Electron - History Feature
  * Domain: History Rules
  * 
- * Reglas de negocio puras para historial de mensajes, normalización de conversaciones
- * y cálculo de estados de entrega diaria sin dependencias de DOM, Electron ni IPC.
+ * Reglas de negocio puras para historial de mensajes, normalización de conversaciones,
+ * paginación defensiva, eliminación de duplicados y cálculo de estados de entrega diaria.
+ * 
+ * Aislamiento estricto: Cero dependencias de DOM, Electron ni IPC.
  */
+
+const DEFAULT_PAGE_SIZE = 50;
+const MIN_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 200;
+
+/**
+ * Normaliza el tamaño de página dentro de límites seguros de memoria.
+ * @param {number|string} size
+ * @returns {number}
+ */
+function normalizePageSize(size) {
+  const parsed = Number(size);
+  if (!Number.isFinite(parsed) || parsed < MIN_PAGE_SIZE) {
+    return DEFAULT_PAGE_SIZE;
+  }
+  return Math.min(MAX_PAGE_SIZE, Math.floor(parsed));
+}
 
 /**
  * Construye la lista unificada de destinatarios disponibles para consulta de historial.
@@ -91,6 +110,95 @@ function normalizeChatMessage(rawMessage = {}, fallbackLabel = 'Contacto') {
 }
 
 /**
+ * Fusiona dos listas de mensajes eliminando duplicados por ID de manera inmutable.
+ * @param {Array<Object>} existingMessages
+ * @param {Array<Object>} newMessages
+ * @returns {Array<Object>}
+ */
+function deduplicateMessages(existingMessages = [], newMessages = []) {
+  const safeExisting = Array.isArray(existingMessages) ? existingMessages : [];
+  const safeNew = Array.isArray(newMessages) ? newMessages : [];
+
+  const seenIds = new Set();
+  const merged = [];
+
+  // Recorremos ambos conjuntos garantizando unicidad estricta por ID
+  [...safeExisting, ...safeNew].forEach((msg) => {
+    if (!msg) return;
+    const id = String(msg.id || `${msg.timestampIso || ''}-${msg.text || ''}`).trim();
+    if (!id || seenIds.has(id)) return;
+
+    seenIds.add(id);
+    merged.push(msg);
+  });
+
+  return merged;
+}
+
+/**
+ * Calcula los metadatos de paginación defensiva.
+ * @param {Object} params
+ * @param {number} params.limit
+ * @param {number} params.offset
+ * @param {number} params.returnedCount
+ * @returns {{ limit: number, offset: number, hasMore: boolean, returnedCount: number }}
+ */
+function calculatePagination({ limit = DEFAULT_PAGE_SIZE, offset = 0, returnedCount = 0 } = {}) {
+  const safeLimit = normalizePageSize(limit);
+  const safeOffset = Math.max(0, Number(offset) || 0);
+  const safeReturned = Math.max(0, Number(returnedCount) || 0);
+
+  // Si la cantidad de elementos devueltos iguala el límite solicitado, es factible que existan más
+  const hasMore = safeReturned >= safeLimit;
+
+  return {
+    limit: safeLimit,
+    offset: safeOffset,
+    hasMore,
+    returnedCount: safeReturned
+  };
+}
+
+/**
+ * Genera metadatos estadísticos inmutables sobre una conversación cargada.
+ * @param {Object} params
+ * @param {Object} params.target
+ * @param {Array<Object>} params.messages
+ * @param {Object} [params.pagination]
+ * @returns {Object}
+ */
+function createConversationMetadata({ target = {}, messages = [], pagination = {} } = {}) {
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const totalMessages = safeMessages.length;
+
+  let outgoingCount = 0;
+  let incomingCount = 0;
+
+  safeMessages.forEach((msg) => {
+    if (msg && (msg.fromMe || msg.isOutgoing)) {
+      outgoingCount += 1;
+    } else {
+      incomingCount += 1;
+    }
+  });
+
+  const firstMessage = safeMessages[0] || null;
+  const lastMessage = safeMessages[safeMessages.length - 1] || null;
+
+  return Object.freeze({
+    targetId: String(target.id || ''),
+    targetName: String(target.name || 'Chat'),
+    targetType: String(target.type || 'contacts'),
+    totalMessages,
+    outgoingCount,
+    incomingCount,
+    firstMessageDate: firstMessage ? firstMessage.timestampIso : null,
+    lastMessageDate: lastMessage ? lastMessage.timestampIso : null,
+    hasMore: Boolean(pagination && pagination.hasMore)
+  });
+}
+
+/**
  * Normaliza la respuesta del repositorio de estados de destinatarios en estructuras indexadas.
  * @param {Object} byId - Diccionario de estados por ID devuelto por el proceso principal
  * @returns {{ sentTodaySet: Set<string>, lastSentMap: Object }}
@@ -169,9 +277,16 @@ function countAlreadySentTargets(targets = [], statusOptions = {}) {
 }
 
 module.exports = {
+  DEFAULT_PAGE_SIZE,
+  MIN_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+  normalizePageSize,
   buildHistoryChatTargets,
   filterChatTargets,
   normalizeChatMessage,
+  deduplicateMessages,
+  calculatePagination,
+  createConversationMetadata,
   normalizeDestinationStatuses,
   checkDestinationStatus,
   countAlreadySentTargets

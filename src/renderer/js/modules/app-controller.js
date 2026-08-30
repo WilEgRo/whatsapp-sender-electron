@@ -359,6 +359,34 @@ class AppController {
       sendingActions.refreshRiskPanel(this, 'contacts');
     });
 
+    const selectedContactsChips = document.getElementById('selectedContactsChips');
+    if (selectedContactsChips) {
+      selectedContactsChips.addEventListener('click', (event) => {
+        const historyBtn = event.target.closest('[data-view-contact-history-id]');
+        if (historyBtn) {
+          const contactId = historyBtn.dataset.viewContactHistoryId;
+          const contact = (this.contacts || []).find((c) => c.id === contactId)
+            || (this.selectedContacts || []).find((c) => c.id === contactId)
+            || { id: contactId, type: 'contacts' };
+          this.openConversation(contact);
+        }
+      });
+    }
+
+    const groupsChecklist = document.getElementById('groupsChecklist');
+    if (groupsChecklist) {
+      groupsChecklist.addEventListener('click', (event) => {
+        const historyBtn = event.target.closest('[data-view-group-history-id]');
+        if (historyBtn) {
+          event.stopPropagation();
+          const groupId = historyBtn.dataset.viewGroupHistoryId;
+          const group = (this.groups || []).find((g) => g.id === groupId)
+            || { id: groupId, type: 'groups' };
+          this.openConversation(group);
+        }
+      });
+    }
+
     Object.entries(this.modeConfig).forEach(([mode, config]) => {
       document.getElementById(config.sendButtonId).addEventListener('click', () => this.sendBatch(mode));
       document.getElementById(config.selectFilesButtonId).addEventListener('click', () => this.selectFiles(mode));
@@ -548,6 +576,14 @@ class AppController {
 
   bindChatHistoryEvents() {
     return this.historyController.bindEvents();
+  }
+
+  openConversation(target) {
+    return this.historyController.openConversation(target);
+  }
+
+  exportConversation(format) {
+    return this.historyController.exportConversation(format);
   }
 
   selectContact(contactId) {

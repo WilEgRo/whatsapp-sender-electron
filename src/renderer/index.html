@@ -21,7 +21,7 @@
                     </div>
                     <div class="brand-info">
                         <span class="brand-title">WhatsApp Sender</span>
-                        <span class="brand-version">PRO v3.5.9</span>
+                        <span class="brand-version">PRO v3.6.0</span>
                     </div>
                 </div>
             </div>
@@ -65,7 +65,7 @@
                     <div class="sidebar-avatar">WP</div>
                     <div class="sidebar-user-info">
                         <span class="sidebar-user-name">WhatsApp Sender Pro</span>
-                        <span class="sidebar-user-role">v3.5.9 · Standalone</span>
+                        <span class="sidebar-user-role">v3.6.0 · Standalone</span>
                     </div>
                 </div>
                 <button id="logoutButton" class="ghost-button ghost-button--tiny topbar-logout-button hidden" type="button" title="Cerrar sesión actual">
@@ -1220,6 +1220,58 @@
                 <button id="confirmModalAcceptBtn" class="confirm-btn confirm-btn--accept" type="button">
                     <span>▶️ Continuar de Todos Modos</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE VISOR DE CONVERSACIÓN / HISTORIAL -->
+    <div id="conversationViewerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="conversationViewerTitle">
+        <div class="modal-card modal-card--conversation">
+            <div class="conversation-modal-header">
+                <div class="conversation-modal-target-info">
+                    <div id="conversationViewerAvatar" class="conversation-avatar">💬</div>
+                    <div>
+                        <div class="conversation-title-row">
+                            <h3 id="conversationViewerTitle" class="conversation-title">Historial de Conversación</h3>
+                            <span id="conversationViewerTypeBadge" class="conversation-badge">Contacto</span>
+                        </div>
+                        <p id="conversationViewerSubtitle" class="conversation-subtitle">Cargando conversación...</p>
+                    </div>
+                </div>
+                <div class="conversation-modal-header-actions">
+                    <div class="conversation-export-group">
+                        <button id="conversationExportTxtBtn" class="btn-ghost-sm" type="button" title="Exportar como texto universal (TXT)">
+                            <span>📄 TXT</span>
+                        </button>
+                        <button id="conversationExportHtmlBtn" class="btn-ghost-sm" type="button" title="Exportar como conversación web (HTML)">
+                            <span>🌐 HTML</span>
+                        </button>
+                        <button id="conversationExportPdfBtn" class="btn-ghost-sm" type="button" title="Imprimir / Exportar como PDF">
+                            <span>📑 PDF</span>
+                        </button>
+                        <button id="conversationExportJsonBtn" class="btn-ghost-sm" type="button" title="Respaldo técnico estructurado (JSON)">
+                            <span>💾 JSON</span>
+                        </button>
+                    </div>
+                    <button id="conversationViewerCloseBtn" class="conversation-close-btn" type="button" title="Cerrar visor">✕</button>
+                </div>
+            </div>
+
+            <div class="conversation-modal-body">
+                <div id="conversationPaginationBar" class="conversation-pagination-bar hidden">
+                    <button id="conversationLoadOlderBtn" class="conversation-load-older-btn" type="button">
+                        <span>⬆️ Cargar mensajes anteriores</span>
+                    </button>
+                </div>
+
+                <div id="conversationMessagesContainer" class="conversation-messages-container">
+                    <!-- Mensajes agrupados por día inyectados dinámicamente -->
+                </div>
+            </div>
+
+            <div class="conversation-modal-footer">
+                <span id="conversationFooterCounter" class="conversation-footer-counter">0 mensajes</span>
+                <span id="conversationFooterStatus" class="conversation-footer-status">Listo</span>
             </div>
         </div>
     </div>

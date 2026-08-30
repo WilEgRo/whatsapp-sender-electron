@@ -47,6 +47,30 @@ class HistoryIpcGateway {
   }
 
   /**
+   * Obtiene la conversación de un destinatario específico con paginación semántica.
+   * @param {Object} params
+   * @param {string} params.targetId
+   * @param {number} [params.limit=50]
+   * @param {number} [params.offset=0]
+   * @returns {Promise<{ success: boolean, result?: Object, error?: string }>}
+   */
+  async getConversation({ targetId, limit = 50, offset = 0 } = {}) {
+    return this.getChatHistoryPreview({ chatId: targetId, limit });
+  }
+
+  /**
+   * Obtiene mensajes más antiguos para paginación incremental.
+   * @param {Object} params
+   * @param {string} params.targetId
+   * @param {number} [params.limit=50]
+   * @param {number} [params.offset=0]
+   * @returns {Promise<{ success: boolean, result?: Object, error?: string }>}
+   */
+  async getOlderMessages({ targetId, limit = 50, offset = 0 } = {}) {
+    return this.getChatHistoryPreview({ chatId: targetId, limit });
+  }
+
+  /**
    * Consulta el estado de envío diario para una lista de destinatarios.
    * @param {Object} params
    * @param {string} params.destinationType - 'contacts' | 'groups'

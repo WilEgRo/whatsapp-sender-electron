@@ -46,6 +46,14 @@ function refreshDestinationStatuses(controller, mode, options) {
   return getOrCreateHistoryController(controller).refreshDestinationStatuses(mode, options);
 }
 
+function openConversation(controller, target) {
+  return getOrCreateHistoryController(controller).openConversation(target);
+}
+
+function exportConversation(controller, format) {
+  return getOrCreateHistoryController(controller).exportConversation(format);
+}
+
 module.exports = {
   bindChatHistoryEvents,
   refreshChatHistoryTargetOptions,
@@ -54,5 +62,7 @@ module.exports = {
   getDestinationStatus,
   getAlreadySentSelectedTargetsCount,
   refreshDestinationStatuses,
+  openConversation,
+  exportConversation,
   getOrCreateHistoryController
 };

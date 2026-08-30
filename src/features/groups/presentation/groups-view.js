@@ -50,6 +50,7 @@ function renderGroupsChecklistHtml(container, { groups = [], selectedGroupIds = 
             ${buildTodayStatusIndicator(isSentToday, lastSentAt)}
             <span class="group-row__sent-today-label">${isSentToday ? `Hoy ${formatLastSentTime(lastSentAt)}` : 'Sin enviar'}</span>
           </span>
+          <span class="group-row__history-btn" data-view-group-history-id="${groupId}" title="Ver historial de conversación">💬</span>
         </button>
       `;
     })
