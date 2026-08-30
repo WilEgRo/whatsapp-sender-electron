@@ -12,6 +12,7 @@ const { CampaignDispatcherController } = require('./campaign/campaign-dispatcher
 const { ContactsController } = require('../../../features/contacts/presentation/contacts-controller');
 const { GroupsController } = require('../../../features/groups/presentation/groups-controller');
 const { SchedulingController } = require('../../../features/scheduling/presentation/scheduling-controller');
+const { AnalyticsController } = require('../../../features/analytics/presentation/analytics-controller');
 
 class AppController {
   constructor() {
@@ -29,6 +30,11 @@ class AppController {
       ipcClient: this.ipcClient
     });
     this.schedulingController = new SchedulingController({
+      stateRef: this,
+      ui: this.ui,
+      ipcClient: this.ipcClient
+    });
+    this.analyticsController = new AnalyticsController({
       stateRef: this,
       ui: this.ui,
       ipcClient: this.ipcClient
@@ -220,63 +226,15 @@ class AppController {
   }
 
   bindStatsEvents() {
-    this.ui.bindStatsActions(
-      () => this.refreshMessageStats({ silent: false }),
-      () => this.exportMessageStatsExcel(),
-      (rangePreset) => {
-        this.statsFilter.preset = String(rangePreset || 'last-30');
-        this.ui.setHistoryCustomRangeVisible(this.statsFilter.preset === 'custom');
-        this.saveFormData();
-        if (this.statsFilter.preset !== 'custom') {
-          this.refreshMessageStats({ silent: false });
-        }
-      },
-      ({ customFrom, customTo }) => {
-        this.statsFilter.customFrom = String(customFrom || '');
-        this.statsFilter.customTo = String(customTo || '');
-        this.saveFormData();
-        this.refreshMessageStats({ silent: false });
-      }
-    );
+    return this.analyticsController.bindEvents();
   }
 
   startStatsAutoRefresh() {
-    if (this.statsRefreshTimer) {
-      clearInterval(this.statsRefreshTimer);
-    }
-
-    this.statsRefreshTimer = setInterval(() => {
-      this.refreshMessageStats({ silent: true });
-    }, 30000);
+    return this.analyticsController.startStatsAutoRefresh();
   }
 
-  async refreshMessageStats({ silent = true } = {}) {
-    this.ui.setStatsLoading(true);
-
-    try {
-      const response = await this.ipcClient.invoke('get-message-stats', {
-        filter: this.statsFilter
-      });
-
-      if (!response || !response.success || !response.stats) {
-        if (!silent) {
-          this.ui.showToast('No se pudieron cargar las estadisticas', 'warning');
-        }
-        return;
-      }
-
-      this.latestStats = response.stats;
-      this.ui.renderMessageStats(response.stats);
-      this.ui.renderMessageStatsHistory(response.stats);
-      this.ui.renderHistoryCharts(response.stats);
-    } catch (error) {
-      console.error('Error cargando estadisticas:', error);
-      if (!silent) {
-        this.ui.showToast('Error cargando estadisticas', 'error');
-      }
-    } finally {
-      this.ui.setStatsLoading(false);
-    }
+  async refreshMessageStats(options) {
+    return this.analyticsController.refreshMessageStats(options);
   }
 
   scheduleDailyStatusRefresh() {
@@ -439,35 +397,7 @@ class AppController {
   }
 
   async exportMessageStatsExcel() {
-    if (!this.hasFeature('advanced_exports')) {
-      this.ui.showToast('La exportacion avanzada requiere plan Pro o superior.', 'warning');
-      return;
-    }
-
-    this.ui.setStatsLoading(true);
-
-    try {
-      const response = await this.ipcClient.invoke('export-message-stats', {
-        filter: this.statsFilter
-      });
-
-      if (!response || !response.success) {
-        this.ui.showToast(`No se pudo exportar reporte: ${response && response.error ? response.error : 'error desconocido'}`, 'error');
-        return;
-      }
-
-      if (response.canceled) {
-        this.ui.showToast('Exportacion cancelada', 'warning');
-        return;
-      }
-
-      this.ui.showToast('Reporte de estadisticas exportado en Excel', 'success');
-    } catch (error) {
-      console.error('Error exportando estadisticas:', error);
-      this.ui.showToast('Error inesperado al exportar estadisticas', 'error');
-    } finally {
-      this.ui.setStatsLoading(false);
-    }
+    return this.analyticsController.exportMessageStatsExcel();
   }
 
   bindUiEvents() {
