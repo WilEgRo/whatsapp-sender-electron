@@ -247,8 +247,8 @@ class UiManager {
     return feedback.showQrCanvas.call(this, canvas);
   }
 
-  showSessionLoading(statusText, detailsText, percent) {
-    return feedback.showSessionLoading.call(this, statusText, detailsText, percent);
+  showSessionLoading(statusText, detailsText, percent, options) {
+    return feedback.showSessionLoading.call(this, statusText, detailsText, percent, options);
   }
 
   updateSessionLoadingStatus(statusText, detailsText, percent, options) {

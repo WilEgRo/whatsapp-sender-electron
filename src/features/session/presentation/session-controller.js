@@ -43,12 +43,45 @@ class SessionController {
     return null;
   }
 
+  /**
+   * Muestra la pantalla de carga inicial inmediatamente al arranque.
+   */
+  showStartupLoading() {
+    const ui = this._getUi();
+    if (!ui || this.isReady) return;
+
+    ui.showSessionLoading(
+      'WhatsApp se está iniciando...',
+      'Conectando con WhatsApp Web y preparando la sesión...',
+      10,
+      {
+        title: 'Iniciando WhatsApp',
+        subtitle: 'Conectando con WhatsApp Web y verificando credenciales...'
+      }
+    );
+  }
+
+  /**
+   * Activa el estado de carga de arranque si no estamos en entorno de testing sin backend.
+   */
+  initStartupLoading() {
+    const isTest = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test';
+    if (isTest) return;
+
+    this.showStartupLoading();
+  }
+
   bindIpcEvents() {
     if (!this.ipcClient) return;
     const ui = this._getUi();
 
     this.ipcClient.on('server-ready', () => {
-      if (ui) ui.updateStatus('Conectando a WhatsApp Web...', 'connecting');
+      if (ui) {
+        ui.updateStatus('Conectando a WhatsApp Web...', 'connecting');
+        if (!this.isReady) {
+          this.showStartupLoading();
+        }
+      }
     });
 
     this.ipcClient.on('whatsapp-qr', async (_event, qrCodeValue) => {
@@ -72,7 +105,11 @@ class SessionController {
         ui.showSessionLoading(
           'WhatsApp autenticado correctamente',
           'Iniciando sesión en WhatsApp y preparando la aplicación...',
-          25
+          25,
+          {
+            title: 'WhatsApp Autenticado',
+            subtitle: 'Preparando la sesión en segundo plano...'
+          }
         );
         ui.showToast('¡Código QR escaneado correctamente!', 'success');
       }
@@ -83,10 +120,10 @@ class SessionController {
       const message = payload && payload.message ? payload.message : 'Descargando datos de WhatsApp...';
       if (ui) {
         ui.updateSessionLoadingStatus(
-          `Cargando sesión de WhatsApp (${Math.round(percent)}%)...`,
+          `WhatsApp Web cargando (${Math.round(percent)}%)...`,
           `${message}. Por favor NO CIERRE el programa.`,
           percent,
-          { subtitle: 'WhatsApp autenticado correctamente. Cargando sesión...' }
+          { title: 'Iniciando WhatsApp', subtitle: 'WhatsApp Web cargando sesión...' }
         );
       }
     });
@@ -97,15 +134,21 @@ class SessionController {
         ui.updateStatus('WhatsApp conectado', 'ready');
         ui.updateSessionLoadingStatus(
           'WhatsApp autenticado y listo',
-          'Sincronizando chats, grupos y contactos...',
+          'Sincronizando chats, grupos y contactos... Por favor espere unos segundos.',
           95,
-          { subtitle: 'WhatsApp autenticado correctamente' }
+          { title: 'WhatsApp Conectado', subtitle: 'Sincronizando información...' }
         );
       }
       console.log('[Groups] WhatsApp listo. Iniciando sincronizacion de grupos...');
       if (this.stateRef && typeof this.stateRef.loadGroups === 'function') {
         this.stateRef.loadGroups();
       }
+      // Salvaguarda de desbloqueo: asegurar que la UI nunca quede bloqueada indefinidamente tras autenticación
+      setTimeout(() => {
+        if (this.isReady && ui && typeof ui.hideQr === 'function') {
+          ui.hideQr();
+        }
+      }, 35000);
     });
 
     this.ipcClient.on('whatsapp-disconnected', (_event, reason) => {
@@ -124,6 +167,9 @@ class SessionController {
       console.log(`[Groups] Sincronizacion completada. Grupos cargados: ${groups.length}`);
       if (this.stateRef && typeof this.stateRef.applyGroupFilter === 'function') {
         this.stateRef.applyGroupFilter();
+      }
+      if (this.stateRef && this.stateRef.chatExportController) {
+        this.stateRef.chatExportController.refreshAvailableTargets();
       }
       if (ui) {
         ui.renderGroupExportOptions(groups, this.stateRef ? this.stateRef.exportGroupId : '');
@@ -149,7 +195,8 @@ class SessionController {
           ui.updateSessionLoadingStatus(
             'Sincronizando chats y grupos de WhatsApp...',
             'Buscando y organizando grupos en segundo plano...',
-            98
+            98,
+            { title: 'Sincronizando grupos', subtitle: 'Descargando información en segundo plano...' }
           );
         }
         return;

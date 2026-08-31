@@ -249,12 +249,19 @@ function showQrCanvas(canvas) {
   this.qrModal.classList.remove('hidden');
 }
 
-function showSessionLoading(statusText = 'Autenticando WhatsApp...', detailsText = 'Preparando la sesión...', percent = 20) {
+function showSessionLoading(statusText = 'Autenticando WhatsApp...', detailsText = 'Preparando la sesión...', percent = 20, options = {}) {
   if (this.qrContentArea) {
     this.qrContentArea.classList.add('hidden');
   }
   if (this.sessionLoadingArea) {
     this.sessionLoadingArea.classList.remove('hidden');
+  }
+
+  if (options.title && this.sessionLoadingTitle) {
+    this.sessionLoadingTitle.textContent = options.title;
+  }
+  if (options.subtitle && this.sessionLoadingSubtitle) {
+    this.sessionLoadingSubtitle.textContent = options.subtitle;
   }
 
   if (this.sessionLoadingStatusText) {

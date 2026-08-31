@@ -2,6 +2,7 @@ const SECTION_METADATA = {
   contacts: { title: 'Despachador de Campañas', desc: 'Composición y despacho seguro de campañas para contactos' },
   groups: { title: 'Operaciones de Grupos', desc: 'Envío, gestión e inspección de seguridad en grupos de WhatsApp' },
   'group-import': { title: 'Crear Grupo desde Excel', desc: 'Importación de participantes y reconciliación de identidades' },
+  'chat-export': { title: 'Exportar Chat', desc: 'Exportación de conversaciones completas de WhatsApp en formatos legibles o respaldo técnico' },
   scheduling: { title: 'Programación', desc: 'Envíos desatendidos y cola de mensajes automatizados' },
   statistics: { title: 'Historial & Métricas', desc: 'Análisis de volumen, entregabilidad y registros persistentes' },
   admin: { title: 'Consola Admin', desc: 'Métricas de dispositivos y auditoría del sistema' }

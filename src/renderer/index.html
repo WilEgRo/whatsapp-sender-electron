@@ -21,7 +21,7 @@
                     </div>
                     <div class="brand-info">
                         <span class="brand-title">WhatsApp Sender</span>
-                        <span class="brand-version">PRO v3.6.0</span>
+                        <span class="brand-version">PRO v3.7.0</span>
                     </div>
                 </div>
             </div>
@@ -40,6 +40,10 @@
                     <button id="importarGruposTab" class="nav-item" data-tab="group-import" type="button">
                         <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
                         <span>Crear Grupo Excel</span>
+                    </button>
+                    <button id="chatExportTab" class="nav-item" data-tab="chat-export" type="button">
+                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        <span>Exportar Chat</span>
                     </button>
                     <button id="programacionTab" class="nav-item" data-tab="scheduling" type="button">
                         <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><polyline points="12 14 12 17 14 17"/></svg>
@@ -65,7 +69,7 @@
                     <div class="sidebar-avatar">WP</div>
                     <div class="sidebar-user-info">
                         <span class="sidebar-user-name">WhatsApp Sender Pro</span>
-                        <span class="sidebar-user-role">v3.6.0 · Standalone</span>
+                        <span class="sidebar-user-role">v3.7.0 · Standalone</span>
                     </div>
                 </div>
                 <button id="logoutButton" class="ghost-button ghost-button--tiny topbar-logout-button hidden" type="button" title="Cerrar sesión actual">
@@ -689,7 +693,96 @@
                 </section>
             </section>
 
+            <section class="tab-panel" data-panel="chat-export" id="chatExportContent">
+                <div class="panel-header">
+                    <h2>Exportar Chat</h2>
+                    <p>Exporta una conversación completa de WhatsApp en un formato legible o como respaldo técnico.</p>
+                </div>
 
+                <div class="chat-export-layout">
+                    <!-- LEFT COLUMN: SELECTION & SEARCH -->
+                    <div class="chat-export-card">
+                        <div class="chat-export-card-header">
+                            <h3>Seleccionar Conversación</h3>
+                        </div>
+
+                        <!-- Source Switcher -->
+                        <div class="chat-export-source-tabs" role="tablist" aria-label="Origen de la conversación">
+                            <button type="button" id="chatExportTabContacts" class="chat-export-source-tab active" role="tab" aria-selected="true">
+                                <span>👤 Contactos</span>
+                            </button>
+                            <button type="button" id="chatExportTabGroups" class="chat-export-source-tab" role="tab" aria-selected="false">
+                                <span>👥 Grupos</span>
+                            </button>
+                        </div>
+
+                        <!-- Search Input -->
+                        <div class="chat-export-search-row">
+                            <input id="chatExportSearchInput" class="chat-export-search-input" type="text" placeholder="Buscar contacto por nombre o número...">
+                            <button id="chatExportSearchClearBtn" class="chat-export-search-clear" type="button" title="Limpiar búsqueda">✕</button>
+                        </div>
+
+                        <!-- Targets List -->
+                        <div class="field-headline">
+                            <span>Conversaciones disponibles</span>
+                            <small id="chatExportResultsCount">0 disponibles</small>
+                        </div>
+                        <div id="chatExportTargetsList" class="chat-export-targets-container" aria-live="polite"></div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: PREVIEW & EXPORT ACTIONS -->
+                    <div class="chat-export-card">
+                        <div class="chat-export-card-header">
+                            <h3>Exportación de Conversación</h3>
+                        </div>
+
+                        <!-- Selected Conversation Banner -->
+                        <div id="chatExportSelectedCard" class="selected-conversation-box">
+                            <div id="chatExportSelectedEmptyHint" class="selected-conversation-empty">
+                                <p>Ninguna conversación seleccionada</p>
+                                <small>Elige un contacto o grupo de la lista para preparar su exportación.</small>
+                            </div>
+                            <div id="chatExportSelectedFilledContainer" class="selected-conversation-details hidden">
+                                <div class="selected-conversation-header">
+                                    <span class="selected-conversation-name" id="chatExportSelectedName">--</span>
+                                    <span class="status-badge" id="chatExportSelectedType">Contacto</span>
+                                </div>
+                                <p class="selected-conversation-meta">Identificador: <code id="chatExportSelectedId">--</code></p>
+                            </div>
+                        </div>
+
+                        <!-- Export Formats Grid -->
+                        <div class="export-formats-grid">
+                            <button id="chatExportTxtBtn" class="export-format-btn" type="button" disabled title="Exportar como texto plano legible para lectura humana">
+                                <span class="export-btn-icon">📄</span>
+                                <span class="export-btn-title">Exportar TXT</span>
+                                <span class="export-btn-desc">Lectura humana universal</span>
+                            </button>
+                            <button id="chatExportHtmlBtn" class="export-format-btn" type="button" disabled title="Exportar como conversación web con estilo WhatsApp">
+                                <span class="export-btn-icon">🌐</span>
+                                <span class="export-btn-title">Exportar HTML</span>
+                                <span class="export-btn-desc">Diseño visual interactivo</span>
+                            </button>
+                            <button id="chatExportPdfBtn" class="export-format-btn" type="button" disabled title="Imprimir o guardar directamente como PDF">
+                                <span class="export-btn-icon">📑</span>
+                                <span class="export-btn-title">Exportar PDF</span>
+                                <span class="export-btn-desc">Preparado para impresión</span>
+                            </button>
+                            <button id="chatExportJsonBtn" class="export-format-btn" type="button" disabled title="Exportar respaldo estructurado en JSON">
+                                <span class="export-btn-icon">💾</span>
+                                <span class="export-btn-title">Exportar JSON</span>
+                                <span class="export-btn-desc">Respaldo técnico estructurado</span>
+                            </button>
+                        </div>
+
+                        <!-- Status / Feedback Area -->
+                        <div id="chatExportStatusBox" class="chat-export-status-box hidden" aria-live="polite">
+                            <div id="chatExportStatusSpinner" class="status-spinner-ring hidden"></div>
+                            <span id="chatExportStatusText"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <section class="tab-panel" data-panel="statistics" id="estadisticasContent">
                 <section class="stats-dashboard" aria-label="Estadisticas de mensajeria">

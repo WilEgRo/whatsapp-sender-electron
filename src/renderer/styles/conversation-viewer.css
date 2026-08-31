@@ -350,7 +350,8 @@
 
 /* History buttons on Contact chips and Group rows */
 .contact-chip__history,
-.group-row__history {
+.group-row__history,
+.group-row__history-btn {
   background: transparent;
   border: none;
   cursor: pointer;

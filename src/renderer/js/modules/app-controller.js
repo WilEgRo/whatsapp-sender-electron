@@ -14,6 +14,7 @@ const { HistoryController } = require('../../../features/history/presentation/hi
 const { MessagingController } = require('../../../features/messaging/presentation/messaging-controller');
 const { SessionController } = require('../../../features/session/presentation/session-controller');
 const { NavigationController } = require('../../../features/navigation/presentation/navigation-controller');
+const { ChatExportController } = require('../../../features/chat-export/presentation/chat-export-controller');
 const formPersistence = require('./campaign/form-persistence');
 
 class AppController {
@@ -60,6 +61,11 @@ class AppController {
     this.navigationController = new NavigationController({
       stateRef: this,
       ui: this.ui
+    });
+    this.chatExportController = new ChatExportController({
+      stateRef: this,
+      ui: this.ui,
+      ipcClient: this.ipcClient
     });
 
     this.modeConfig = modeConfig;
@@ -154,6 +160,7 @@ class AppController {
   }
 
   init() {
+    this.sessionController.initStartupLoading();
     this.bindUiEvents();
     this.bindMessageComposerEvents();
     this.bindIpcEvents();
@@ -161,6 +168,7 @@ class AppController {
     this.bindStatsEvents();
     this.bindAdminUiEvents();
     this.bindChatHistoryEvents();
+    this.chatExportController.bindEvents();
     groupImportActions.bind(this);
     sendingActions.bindRiskControls(this, 'contacts');
     sendingActions.bindRiskControls(this, 'groups');
@@ -241,6 +249,16 @@ class AppController {
     return this.historyController.refreshDestinationStatuses(mode, options);
   }
 
+  async loadGroups() {
+    this.ui.updateStatus('Cargando grupos...', 'connecting');
+    return this.groupsController.loadGroups()
+      .then(() => this.refreshDestinationStatuses('groups', { repaint: true }))
+      .finally(() => {
+        this.refreshChatHistoryTargetOptions();
+        sendingActions.refreshRiskPanel(this, 'groups');
+      });
+  }
+
   async exportMessageStatsExcel() {
     return this.analyticsController.exportMessageStatsExcel();
   }
@@ -255,6 +273,13 @@ class AppController {
 
       if (tab === 'chat-history') {
         this.refreshChatHistoryTargetOptions();
+        return;
+      }
+
+      if (tab === 'chat-export') {
+        if (this.chatExportController) {
+          this.chatExportController.refreshAvailableTargets();
+        }
         return;
       }
 
@@ -527,6 +552,9 @@ class AppController {
       .then(() => this.refreshDestinationStatuses('groups', { repaint: true }))
       .finally(() => {
         this.refreshChatHistoryTargetOptions();
+        if (this.chatExportController) {
+          this.chatExportController.refreshAvailableTargets();
+        }
         sendingActions.refreshRiskPanel(this, 'groups');
       });
   }
@@ -536,6 +564,9 @@ class AppController {
       .then(() => this.refreshDestinationStatuses('contacts', { repaint: true }))
       .finally(() => {
         this.refreshChatHistoryTargetOptions();
+        if (this.chatExportController) {
+          this.chatExportController.refreshAvailableTargets();
+        }
         sendingActions.refreshRiskPanel(this, 'contacts');
         this.ui.renderScheduleTargetOptions(this.scheduleDraft.targetType, this.contacts, this.groups, this.scheduleDraft.targetId);
       });
@@ -584,6 +615,12 @@ class AppController {
 
   exportConversation(format) {
     return this.historyController.exportConversation(format);
+  }
+
+  exportChat(format) {
+    if (this.chatExportController) {
+      return this.chatExportController.exportChat(format);
+    }
   }
 
   selectContact(contactId) {

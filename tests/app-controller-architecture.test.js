@@ -45,6 +45,7 @@ test('AppController Architecture: inicializa todos los controladores vertical sl
   assert.ok(controller.messagingController, 'Debe instanciar MessagingController');
   assert.ok(controller.sessionController, 'Debe instanciar SessionController');
   assert.ok(controller.navigationController, 'Debe instanciar NavigationController');
+  assert.ok(controller.chatExportController, 'Debe instanciar ChatExportController');
 });
 
 test('AppController Architecture: expone contratos públicos requeridos por compatibilidad', () => {

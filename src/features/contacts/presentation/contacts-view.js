@@ -149,6 +149,7 @@ function renderSelectedContactsHtml(
             <span class="target-status-tags">
               ${isSentToday ? buildTodayBadge(lastSentAt) : ''}
             </span>
+          </div>
           <div class="contact-chip__actions">
             <button type="button" class="contact-chip__history" data-view-contact-history-id="${contact.id}" title="Ver historial de conversación">💬</button>
             <button type="button" class="contact-chip__remove" data-remove-contact-id="${contact.id}" title="Quitar contacto">x</button>

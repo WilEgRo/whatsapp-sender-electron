@@ -668,12 +668,13 @@ class HistoryController {
    */
   async refreshDestinationStatuses(mode = 'contacts', { repaint = false } = {}) {
     const safeMode = mode === 'groups' ? 'groups' : 'contacts';
-    const sourceList = safeMode === 'groups'
-      ? ((this.stateRef && this.stateRef.groups) || [])
-      : ((this.stateRef && this.stateRef.contacts) || []);
+    const destinationIds = extractDestinationIds(safeMode, {
+      contacts: (this.stateRef && this.stateRef.contacts) || [],
+      groups: (this.stateRef && this.stateRef.groups) || [],
+      selectedContacts: (this.stateRef && this.stateRef.selectedContacts) || []
+    });
 
-    const destinationIds = extractDestinationIds(sourceList, safeMode);
-    if (!destinationIds.length) {
+    if (!Array.isArray(destinationIds) || !destinationIds.length) {
       return false;
     }
 
@@ -691,13 +692,18 @@ class HistoryController {
       this.sentTodayByMode[safeMode] = sentTodaySet;
       this.lastSentAtByMode[safeMode] = lastSentMap;
 
+      if (this.stateRef) {
+        if (!this.stateRef.sentTodayByMode) this.stateRef.sentTodayByMode = {};
+        if (!this.stateRef.lastSentAtByMode) this.stateRef.lastSentAtByMode = {};
+        this.stateRef.sentTodayByMode[safeMode] = sentTodaySet;
+        this.stateRef.lastSentAtByMode[safeMode] = lastSentMap;
+      }
+
       if (repaint) {
-        const ui = this._getUi();
-        if (safeMode === 'groups' && ui && typeof ui.paintGroupSelection === 'function') {
-          ui.paintGroupSelection();
-        } else if (safeMode === 'contacts' && ui && typeof ui.renderSelectedContacts === 'function') {
-          const selectedContacts = (this.stateRef && this.stateRef.selectedContacts) || [];
-          ui.renderSelectedContacts(selectedContacts);
+        if (safeMode === 'contacts' && this.stateRef && typeof this.stateRef.applyContactFilter === 'function') {
+          this.stateRef.applyContactFilter();
+        } else if (safeMode === 'groups' && this.stateRef && typeof this.stateRef.applyGroupFilter === 'function') {
+          this.stateRef.applyGroupFilter();
         }
       }
 

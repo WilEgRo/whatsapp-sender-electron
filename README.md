@@ -2,12 +2,14 @@
 
 Aplicacion de escritorio en Electron para gestionar envios a contactos y grupos de WhatsApp Web con controles de seguridad, validacion previa, exportacion de integrantes de grupos y evaluacion de riesgo antes de disparar una campaña.
 
-Version actual: 3.6.0
+Version actual: 3.7.0
 
 ## Para que sirve
 
 - Enviar mensajes a contactos seleccionados desde un buscador en tiempo real.
 - Enviar mensajes a grupos seleccionados desde una lista filtrable.
+- Exportar conversaciones completas de chats individuales y grupales bajo demanda en formatos TXT, HTML, PDF y JSON.
+- Experiencia de inicio inmediato (Startup Loading UX) con visibilidad transparente del estado y progreso de WhatsApp.
 - Adjuntar archivos en campanas individuales o grupales.
 - Exportar integrantes de grupos a CSV o Excel.
 - Registrar cada envio en SQLite de forma persistente.
