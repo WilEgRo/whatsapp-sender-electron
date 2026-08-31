@@ -165,6 +165,7 @@ test('Compatibilidad: Canales IPC del Main Process no han sido alterados', () =>
     'cancel-scheduled-message',
     'process-scheduled-messages-now',
     'get-device-fingerprint',
+    'get-whatsapp-session-state',
     'renderer-ready'
   ];
 

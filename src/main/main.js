@@ -58,11 +58,38 @@ function createMainWindow() {
       return;
     }
 
-    if (whatsappService.isReady) {
+    const sessionSnapshot = whatsappService.getSessionStatus();
+    sendToRenderer('whatsapp-session-snapshot', sessionSnapshot);
+
+    if (sessionSnapshot.isReady) {
       sendToRenderer('whatsapp-ready');
-      if (whatsappService.groups.length > 0) {
-        sendToRenderer('groups-loaded', whatsappService.groups);
+      if (Array.isArray(sessionSnapshot.groups) && sessionSnapshot.groups.length > 0) {
+        sendToRenderer('groups-loaded', sessionSnapshot.groups);
       }
+      if (!sessionSnapshot.isSyncingGroups) {
+        sendToRenderer('groups-sync-status', {
+          state: 'completed',
+          total: sessionSnapshot.groupsCount
+        });
+      }
+      return;
+    }
+
+    if (sessionSnapshot.status === 'qr' && sessionSnapshot.qrCode) {
+      sendToRenderer('whatsapp-qr', sessionSnapshot.qrCode);
+      return;
+    }
+
+    if (sessionSnapshot.status === 'loading') {
+      sendToRenderer('whatsapp-loading-screen', {
+        percent: sessionSnapshot.loadingPercent,
+        message: sessionSnapshot.loadingMessage
+      });
+      return;
+    }
+
+    if (sessionSnapshot.isAuthenticated) {
+      sendToRenderer('whatsapp-authenticated');
       return;
     }
 
@@ -182,17 +209,57 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('window-all-closed', () => {
+let isQuitting = false;
+
+async function cleanupAndQuit() {
+  if (isQuitting) return;
+  isQuitting = true;
+
   if (scheduledMessageService) {
     scheduledMessageService.stop();
   }
 
   if (expressServer) {
-    expressServer.close();
+    try {
+      expressServer.close();
+    } catch (_) {}
     expressServer = null;
   }
 
+  if (whatsappService) {
+    try {
+      await whatsappService.close();
+    } catch (error) {
+      console.warn('[Main] Error cerrando WhatsAppService:', error);
+    }
+    whatsappService = null;
+  }
+
+  app.quit();
+}
+
+app.on('before-quit', (event) => {
+  if (!isQuitting && whatsappService) {
+    event.preventDefault();
+    cleanupAndQuit();
+  }
+});
+
+app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit();
+    cleanupAndQuit();
+  }
+});
+
+process.on('exit', () => {
+  if (whatsappService && whatsappService.client && whatsappService.client.pupBrowser) {
+    try {
+      const proc = typeof whatsappService.client.pupBrowser.process === 'function'
+        ? whatsappService.client.pupBrowser.process()
+        : null;
+      if (proc && !proc.killed) {
+        proc.kill('SIGKILL');
+      }
+    } catch (_) {}
   }
 });

@@ -104,6 +104,8 @@ electron-data/
 # ------------------------------------------------------------
 # Bases de datos locales generadas en runtime
 # ------------------------------------------------------------
+data/
+*.sqlite
 *.sqlite-shm
 *.sqlite-wal
 

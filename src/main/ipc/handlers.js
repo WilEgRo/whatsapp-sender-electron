@@ -303,6 +303,31 @@ function registerIpcHandlers({ ipcMain, dialog, getMainWindow, getWhatsAppServic
     }
   });
 
+  ipcMain.handle('get-whatsapp-session-state', async () => {
+    const whatsappService = getWhatsAppService();
+    if (!whatsappService) {
+      return {
+        success: true,
+        state: {
+          status: 'disconnected',
+          isAuthenticated: false,
+          isReady: false,
+          isSyncingGroups: false,
+          loadingPercent: 0,
+          loadingMessage: '',
+          qrCode: null,
+          groupsCount: 0,
+          groups: []
+        }
+      };
+    }
+
+    return {
+      success: true,
+      state: whatsappService.getSessionStatus()
+    };
+  });
+
   ipcMain.on('renderer-ready', async () => {
     const mainWindow = getMainWindow();
     const whatsappService = getWhatsAppService();
@@ -311,22 +336,49 @@ function registerIpcHandlers({ ipcMain, dialog, getMainWindow, getWhatsAppServic
       return;
     }
 
-    const state = await whatsappService.getClientState();
+    const sessionSnapshot = whatsappService.getSessionStatus();
+    mainWindow.webContents.send('whatsapp-session-snapshot', sessionSnapshot);
 
-    if (state === 'CONNECTED') {
+    if (sessionSnapshot.isReady) {
       mainWindow.webContents.send('whatsapp-ready');
-      if (Array.isArray(whatsappService.groups) && whatsappService.groups.length > 0) {
-        mainWindow.webContents.send('groups-loaded', whatsappService.groups);
+      if (Array.isArray(sessionSnapshot.groups) && sessionSnapshot.groups.length > 0) {
+        mainWindow.webContents.send('groups-loaded', sessionSnapshot.groups);
+      }
+      if (!sessionSnapshot.isSyncingGroups) {
+        mainWindow.webContents.send('groups-sync-status', {
+          state: 'completed',
+          total: sessionSnapshot.groupsCount
+        });
       }
       return;
     }
 
-    if (state === 'OPENING') {
+    if (sessionSnapshot.status === 'qr' && sessionSnapshot.qrCode) {
+      mainWindow.webContents.send('whatsapp-qr', sessionSnapshot.qrCode);
+      return;
+    }
+
+    if (sessionSnapshot.status === 'loading') {
+      mainWindow.webContents.send('whatsapp-loading-screen', {
+        percent: sessionSnapshot.loadingPercent,
+        message: sessionSnapshot.loadingMessage
+      });
+      return;
+    }
+
+    if (sessionSnapshot.isAuthenticated) {
+      mainWindow.webContents.send('whatsapp-authenticated');
+      return;
+    }
+
+    if (sessionSnapshot.status === 'starting') {
       mainWindow.webContents.send('server-ready');
       return;
     }
 
-    mainWindow.webContents.send('whatsapp-disconnected', 'Cliente no conectado');
+    if (sessionSnapshot.status === 'disconnected') {
+      mainWindow.webContents.send('whatsapp-disconnected', 'Cliente no conectado');
+    }
   });
 }
 

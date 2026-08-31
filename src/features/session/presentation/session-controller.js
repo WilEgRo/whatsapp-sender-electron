@@ -62,6 +62,106 @@ class SessionController {
   }
 
   /**
+   * Renderiza el código QR en un canvas y lo proyecta en la interfaz.
+   */
+  async renderQrCode(qrCodeValue) {
+    const ui = this._getUi();
+    if (!ui || !qrCodeValue) return;
+
+    try {
+      const qrCanvas = await QRCode.toCanvas(qrCodeValue, {
+        width: 240,
+        margin: 2,
+        color: { dark: '#0d1b16', light: '#f6fff9' }
+      });
+
+      ui.showQrCanvas(qrCanvas);
+    } catch (error) {
+      console.error('Error renderizando QR:', error);
+      if (ui) ui.showToast('No se pudo renderizar el codigo QR', 'error');
+    }
+  }
+
+  /**
+   * Sincroniza el estado consultando al proceso principal mediante handshake.
+   */
+  async syncSessionState() {
+    if (!this.ipcClient) return null;
+    try {
+      const response = await this.ipcClient.invoke('get-whatsapp-session-state');
+      if (response && response.success && response.state) {
+        this.applySessionSnapshot(response.state);
+        return response.state;
+      }
+    } catch (err) {
+      console.warn('[SessionController] Error al consultar estado de sesión:', err.message || err);
+    }
+    return null;
+  }
+
+  /**
+   * Aplica un snapshot completo de sesión reconciliando el estado visual.
+   */
+  applySessionSnapshot(state) {
+    if (!state) return;
+    const ui = this._getUi();
+
+    if (state.isReady) {
+      this.isReady = true;
+      if (ui) {
+        ui.updateStatus('WhatsApp conectado', 'ready');
+        ui.hideQr();
+      }
+      if (Array.isArray(state.groups) && state.groups.length > 0 && this.stateRef) {
+        this.stateRef.groups = state.groups;
+        if (typeof this.stateRef.applyGroupFilter === 'function') {
+          this.stateRef.applyGroupFilter();
+        }
+        if (this.stateRef.chatExportController) {
+          this.stateRef.chatExportController.refreshAvailableTargets();
+        }
+      }
+      return;
+    }
+
+    if (state.status === 'qr' && state.qrCode) {
+      this.isReady = false;
+      this.renderQrCode(state.qrCode);
+      return;
+    }
+
+    if (state.status === 'loading' || (state.isAuthenticated && !state.isReady)) {
+      this.isReady = false;
+      if (ui) {
+        const percent = Math.max(20, Number(state.loadingPercent) || 20);
+        const message = state.loadingMessage || 'Descargando datos de WhatsApp...';
+        ui.updateSessionLoadingStatus(
+          `WhatsApp Web cargando (${Math.round(percent)}%)...`,
+          `${message}. Por favor NO CIERRE el programa.`,
+          percent,
+          { title: 'Iniciando WhatsApp', subtitle: 'WhatsApp Web cargando sesión...' }
+        );
+      }
+      return;
+    }
+
+    if (state.status === 'starting') {
+      this.isReady = false;
+      if (!this.isReady) {
+        this.showStartupLoading();
+      }
+      return;
+    }
+
+    if (state.status === 'disconnected') {
+      this.isReady = false;
+      if (ui) {
+        ui.updateStatus('WhatsApp desconectado', 'error');
+      }
+    }
+  }
+
+  /**
    * Activa el estado de carga de arranque si no estamos en entorno de testing sin backend.
    */
   initStartupLoading() {
@@ -69,11 +169,17 @@ class SessionController {
     if (isTest) return;
 
     this.showStartupLoading();
+    this.syncSessionState();
   }
 
   bindIpcEvents() {
-    if (!this.ipcClient) return;
+    if (!this.ipcClient || this._ipcBound) return;
+    this._ipcBound = true;
     const ui = this._getUi();
+
+    this.ipcClient.on('whatsapp-session-snapshot', (_event, snapshot) => {
+      this.applySessionSnapshot(snapshot);
+    });
 
     this.ipcClient.on('server-ready', () => {
       if (ui) {
@@ -85,18 +191,7 @@ class SessionController {
     });
 
     this.ipcClient.on('whatsapp-qr', async (_event, qrCodeValue) => {
-      try {
-        const qrCanvas = await QRCode.toCanvas(qrCodeValue, {
-          width: 240,
-          margin: 2,
-          color: { dark: '#0d1b16', light: '#f6fff9' }
-        });
-
-        if (ui) ui.showQrCanvas(qrCanvas);
-      } catch (error) {
-        console.error('Error renderizando QR:', error);
-        if (ui) ui.showToast('No se pudo renderizar el codigo QR', 'error');
-      }
+      await this.renderQrCode(qrCodeValue);
     });
 
     this.ipcClient.on('whatsapp-authenticated', () => {
@@ -133,22 +228,22 @@ class SessionController {
       if (ui) {
         ui.updateStatus('WhatsApp conectado', 'ready');
         ui.updateSessionLoadingStatus(
-          'WhatsApp autenticado y listo',
-          'Sincronizando chats, grupos y contactos... Por favor espere unos segundos.',
-          95,
-          { title: 'WhatsApp Conectado', subtitle: 'Sincronizando información...' }
+          '¡WhatsApp Conectado y Listo!',
+          'Sesión lista al 100%. Abriendo aplicación...',
+          100,
+          { title: 'WhatsApp Conectado', subtitle: 'Listo' }
         );
+        // Desbloquea la interfaz inmediatamente al estar WhatsApp listo
+        setTimeout(() => {
+          if (this.isReady && ui && typeof ui.hideQr === 'function') {
+            ui.hideQr();
+          }
+        }, 600);
       }
       console.log('[Groups] WhatsApp listo. Iniciando sincronizacion de grupos...');
       if (this.stateRef && typeof this.stateRef.loadGroups === 'function') {
         this.stateRef.loadGroups();
       }
-      // Salvaguarda de desbloqueo: asegurar que la UI nunca quede bloqueada indefinidamente tras autenticación
-      setTimeout(() => {
-        if (this.isReady && ui && typeof ui.hideQr === 'function') {
-          ui.hideQr();
-        }
-      }, 35000);
     });
 
     this.ipcClient.on('whatsapp-disconnected', (_event, reason) => {
@@ -208,15 +303,7 @@ class SessionController {
           ui.updateStatus('WhatsApp conectado', 'ready');
         }
         if (ui) {
-          ui.updateSessionLoadingStatus(
-            '¡Sincronización completada al 100%!',
-            `Se sincronizaron ${payload.total || 0} grupos correctamente. Abriendo aplicación...`,
-            100,
-            { title: '¡WhatsApp Conectado y Sincronizado!' }
-          );
-          setTimeout(() => {
-            ui.hideQr();
-          }, 1200);
+          ui.hideQr();
         }
         return;
       }

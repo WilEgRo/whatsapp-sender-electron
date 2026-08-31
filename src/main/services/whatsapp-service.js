@@ -18,6 +18,13 @@ class WhatsAppService extends EventEmitter {
       this.isSyncingGroups = false;
       this.isCancelRequested = false;
 
+      // Estado consultable del ciclo de vida de la sesión
+      this.sessionState = 'disconnected'; // 'disconnected' | 'starting' | 'qr' | 'authenticated' | 'loading' | 'ready'
+      this.lastLoadingPercent = 0;
+      this.lastLoadingMessage = '';
+      this.lastQrCode = null;
+      this.isStarting = false;
+
       this.messageLogRepository = new MessageLogRepository();
       this.messageAnalyticsService = new MessageAnalyticsService(this.messageLogRepository);
       this.analyticsReady = this.messageLogRepository.initialize().catch((error) => {
@@ -27,6 +34,12 @@ class WhatsAppService extends EventEmitter {
     }
 
     start(onStarted) {
+      if (this.isStarting || this.isReady) {
+        console.log('[WhatsAppService] start() ignorado: el servicio ya está en proceso de inicio o ya está listo.');
+        return;
+      }
+      this.isStarting = true;
+      this.sessionState = 'starting';
       this.client = this.createClient();
       this.registerClientEvents(onStarted);
       this.client.initialize();
@@ -62,46 +75,64 @@ class WhatsAppService extends EventEmitter {
 
     registerClientEvents(onStarted) {
       this.client.on('qr', (qr) => {
+        this.sessionState = 'qr';
+        this.lastQrCode = qr;
         this.isAuthenticated = false;
         this.emit('qr', qr);
       });
 
       this.client.on('ready', async () => {
         this.isReady = true;
+        this.isStarting = false;
+        this.sessionState = 'ready';
+        this.lastLoadingPercent = 100;
         await this.patchSendSeen();
-        try {
-          await this.loadGroups();
-        } catch (error) {
-          console.error('[WhatsAppService] La sincronizacion de grupos no pudo completarse al iniciar:', error);
-        }
+
+        // Emite ready INMEDIATAMENTE para desbloquear la aplicación sin esperar la sincronización secundaria de grupos
+        console.log('[WhatsAppService] WhatsApp Web listo para operar. Emitiendo evento ready...');
         this.emit('ready');
         if (onStarted) {
           onStarted();
         }
+
+        // Sincronización secundaria en segundo plano
+        this.loadGroups().catch((error) => {
+          console.error('[WhatsAppService] La sincronizacion de grupos no pudo completarse al iniciar:', error);
+        });
       });
 
       this.client.on('authenticated', () => {
         if (!this.isAuthenticated) {
           this.isAuthenticated = true;
+          this.sessionState = 'authenticated';
+          this.lastQrCode = null;
           console.log('WhatsApp autenticado correctamente');
           this.emit('authenticated');
         }
       });
 
       this.client.on('loading_screen', (percent, message) => {
+        this.sessionState = 'loading';
+        this.lastLoadingPercent = Number(percent) || 0;
+        this.lastLoadingMessage = message || '';
         console.log(`[WhatsAppService] Cargando sesion: ${percent}% - ${message}`);
         this.emit('loading_screen', { percent, message });
       });
 
       this.client.on('auth_failure', (message) => {
         console.error('Error de autenticacion:', message);
+        this.sessionState = 'disconnected';
         this.isAuthenticated = false;
+        this.isReady = false;
+        this.isStarting = false;
         this.emit('disconnected', message);
       });
 
       this.client.on('disconnected', (reason) => {
+        this.sessionState = 'disconnected';
         this.isReady = false;
         this.isAuthenticated = false;
+        this.isStarting = false;
         this.emit('disconnected', reason);
         this.scheduleReconnect();
       });
@@ -915,13 +946,59 @@ class WhatsAppService extends EventEmitter {
       }
     }
 
-    close() {
-      if (this.client) {
-        this.client.destroy();
-        this.client = null;
+    /**
+     * Retorna el estado completo del ciclo de vida de la sesión para handshake consultable.
+     */
+    getSessionStatus() {
+      return {
+        status: this.sessionState || (this.isReady ? 'ready' : (this.isAuthenticated ? 'authenticated' : 'disconnected')),
+        isAuthenticated: Boolean(this.isAuthenticated),
+        isReady: Boolean(this.isReady),
+        isSyncingGroups: Boolean(this.isSyncingGroups),
+        loadingPercent: typeof this.lastLoadingPercent === 'number' ? this.lastLoadingPercent : 0,
+        loadingMessage: this.lastLoadingMessage || '',
+        qrCode: this.lastQrCode || null,
+        groupsCount: Array.isArray(this.groups) ? this.groups.length : 0,
+        groups: Array.isArray(this.groups) ? this.groups : []
+      };
+    }
+
+    async close() {
+      if (!this.client) {
         this.isReady = false;
-        console.log('Cliente WhatsApp cerrado');
+        this.isAuthenticated = false;
+        this.isStarting = false;
+        this.sessionState = 'disconnected';
+        return;
       }
+
+      console.log('[WhatsAppService] Cerrando cliente WhatsApp y liberando procesos...');
+      const clientRef = this.client;
+      this.client = null;
+      this.isReady = false;
+      this.isAuthenticated = false;
+      this.isStarting = false;
+      this.sessionState = 'disconnected';
+
+      try {
+        if (clientRef.pupBrowser) {
+          const browserProcess = typeof clientRef.pupBrowser.process === 'function' ? clientRef.pupBrowser.process() : null;
+          await Promise.race([
+            clientRef.destroy(),
+            this.sleep(2500)
+          ]);
+          if (browserProcess && !browserProcess.killed) {
+            try {
+              browserProcess.kill('SIGKILL');
+            } catch (_) {}
+          }
+        } else {
+          await clientRef.destroy();
+        }
+      } catch (err) {
+        console.warn('[WhatsAppService] Error cerrando cliente WhatsApp:', err.message || err);
+      }
+      console.log('[WhatsAppService] Cliente WhatsApp cerrado y recursos liberados');
     }
 }
 

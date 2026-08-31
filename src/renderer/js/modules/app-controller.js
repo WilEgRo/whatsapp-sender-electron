@@ -160,10 +160,10 @@ class AppController {
   }
 
   init() {
+    this.bindIpcEvents();
     this.sessionController.initStartupLoading();
     this.bindUiEvents();
     this.bindMessageComposerEvents();
-    this.bindIpcEvents();
     this.loadSavedData();
     this.bindStatsEvents();
     this.bindAdminUiEvents();
