@@ -28,7 +28,7 @@ const ERROR_CODES = Object.freeze({
  */
 function isValidPhoneNumber(number) {
   const normalized = String(number || '').replace(/[^0-9]/g, '');
-  return normalized.length >= 8 && normalized.length <= 15;
+  return normalized.length >= 7 && normalized.length <= 15;
 }
 
 /**

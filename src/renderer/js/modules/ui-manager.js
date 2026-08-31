@@ -135,8 +135,8 @@ class UiManager {
     return renderers.renderContactResults.call(this, contacts, searchTerm, totalCount);
   }
 
-  renderSelectedContacts(contacts) {
-    return renderers.renderSelectedContacts.call(this, contacts);
+  renderSelectedContacts(contacts, updateNumbersField = true) {
+    return renderers.renderSelectedContacts.call(this, contacts, updateNumbersField);
   }
 
   renderScheduleTargetOptions(mode, contacts, groups, selectedTargetId = '') {

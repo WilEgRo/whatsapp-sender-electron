@@ -25,7 +25,10 @@ class AppController {
     this.contactsController = new ContactsController({
       stateRef: this,
       ui: this.ui,
-      ipcClient: this.ipcClient
+      ipcClient: this.ipcClient,
+      onSelectionChange: () => {
+        sendingActions.refreshRiskPanel(this, 'contacts');
+      }
     });
     this.groupsController = new GroupsController({
       stateRef: this,
@@ -362,8 +365,9 @@ class AppController {
 
     const importExcelBtn = document.getElementById('importExcelContactsButton');
     if (importExcelBtn) {
-      importExcelBtn.addEventListener('click', () => {
-        this.importExcelContacts();
+      importExcelBtn.addEventListener('click', async () => {
+        await this.importExcelContacts();
+        sendingActions.refreshRiskPanel(this, 'contacts');
       });
     }
 
@@ -371,6 +375,7 @@ class AppController {
     if (clearSelectedBtn) {
       clearSelectedBtn.addEventListener('click', () => {
         this.clearSelectedContacts();
+        sendingActions.refreshRiskPanel(this, 'contacts');
       });
     }
 
@@ -467,10 +472,14 @@ class AppController {
 
     const numerosEl = document.getElementById('numeros');
     if (numerosEl) {
-      numerosEl.addEventListener('input', (event) => {
+      const handleManualNumbers = (event) => {
         this.syncManualNumbers(event.target.value);
         this.saveFormData();
-      });
+        sendingActions.refreshRiskPanel(this, 'contacts');
+      };
+      numerosEl.addEventListener('input', handleManualNumbers);
+      numerosEl.addEventListener('change', handleManualNumbers);
+      numerosEl.addEventListener('blur', handleManualNumbers);
     }
 
     const selectFilteredGroupsButton = document.getElementById('selectFilteredGroups');
@@ -628,19 +637,31 @@ class AppController {
   }
 
   removeSelectedContact(contactId) {
-    return this.contactsController.removeSelectedContact(contactId);
+    const result = this.contactsController.removeSelectedContact(contactId);
+    sendingActions.refreshRiskPanel(this, 'contacts');
+    return result;
   }
 
   clearSelectedContacts() {
-    return this.contactsController.clearSelectedContacts();
+    const result = this.contactsController.clearSelectedContacts();
+    sendingActions.refreshRiskPanel(this, 'contacts');
+    return result;
   }
 
   syncManualNumbers(textValue) {
-    return this.contactsController.syncManualNumbers(textValue);
+    const result = this.contactsController.syncManualNumbers(textValue);
+    sendingActions.refreshRiskPanel(this, 'contacts');
+    return result;
   }
 
-  importExcelContacts() {
-    return this.contactsController.importExcelContacts();
+  async importExcelContacts() {
+    const result = await this.contactsController.importExcelContacts();
+    sendingActions.refreshRiskPanel(this, 'contacts');
+    return result;
+  }
+
+  onContactsSelectionChange() {
+    sendingActions.refreshRiskPanel(this, 'contacts');
   }
 
   markContactsAsRecentlyMessaged(targets) {

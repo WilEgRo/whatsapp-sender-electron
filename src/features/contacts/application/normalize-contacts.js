@@ -62,6 +62,40 @@ function filterAndRankContacts({
 }
 
 /**
+ * Extrae tokens numéricos limpios de una cadena, manejando números con espacios
+ * internos (ej: "+591 7444 7830"), saltos de línea, comas, puntos y comas o tabuladores.
+ * @param {string} textValue
+ * @returns {Array<string>}
+ */
+function extractNumberTokens(textValue) {
+  const primaryChunks = String(textValue || '').split(/[\n\r,;\t]+/);
+  const tokens = [];
+
+  primaryChunks.forEach((chunk) => {
+    const trimmed = chunk.trim();
+    if (!trimmed) return;
+
+    const subTokens = trimmed.split(/\s+/).map((t) => normalizeNumber(t)).filter(Boolean);
+    if (subTokens.length === 0) return;
+
+    // Si contiene tokens que individualmente ya tienen >= 7 dígitos (ej: "59174445566 123" o "59174447830 59171112233")
+    const validSubs = subTokens.filter((s) => isValidPhoneNumber(s, 7, 15));
+    if (validSubs.length > 0) {
+      tokens.push(...validSubs);
+      return;
+    }
+
+    // Si ningún subtoken individual tiene >= 7 dígitos, el conjunto con espacios puede conformar un único número (ej: "+591 7444 7830")
+    const collapsed = normalizeNumber(trimmed);
+    if (isValidPhoneNumber(collapsed, 7, 15)) {
+      tokens.push(collapsed);
+    }
+  });
+
+  return tokens;
+}
+
+/**
  * Parsea y normaliza una cadena de texto manual (números separados por salto de línea, coma o espacio).
  * Reconcilia con contactos conocidos o genera nuevos contactos estructurados.
  * @param {string} textValue
@@ -71,10 +105,7 @@ function filterAndRankContacts({
  * @returns {Array<Object>} Lista actualizada de contactos seleccionados
  */
 function parseManualNumbersText(textValue, { existingContacts = [], currentSelected = [] } = {}) {
-  const rawTokens = String(textValue || '')
-    .split(/[\n,\s]+/)
-    .map((token) => normalizeNumber(token))
-    .filter((num) => isValidPhoneNumber(num, 7, 15));
+  const rawTokens = extractNumberTokens(textValue);
 
   const existingMap = new Map();
   (existingContacts || []).forEach((c) => {
@@ -191,6 +222,7 @@ function recordRecentInteractions({
 }
 
 module.exports = {
+  extractNumberTokens,
   filterAndRankContacts,
   parseManualNumbersText,
   normalizeImportedContacts,

@@ -220,8 +220,8 @@ function updateGroupMembersInfo(message, tone = '') {
 }
 
 function updateContactCounter(numbersRaw) {
-  const selectedCount = numbersRaw
-    .split(',')
+  const selectedCount = String(numbersRaw || '')
+    .split(/[\n\r,;\t]+/)
     .map((item) => item.trim())
     .filter(Boolean).length;
 
@@ -229,12 +229,14 @@ function updateContactCounter(numbersRaw) {
     ? Number(this.importedContactsTotal)
     : 0;
 
-  if (importedTotal > 0) {
+  if (importedTotal > 0 && this.totalContactsElement) {
     this.totalContactsElement.textContent = String(importedTotal);
     return;
   }
 
-  this.totalContactsElement.textContent = String(selectedCount);
+  if (this.totalContactsElement) {
+    this.totalContactsElement.textContent = String(selectedCount);
+  }
 }
 
 function updateContactFilterInfo(filteredCount, totalCount, term) {

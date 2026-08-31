@@ -37,6 +37,7 @@ class ContactsController {
     this.ui = options.ui || null;
     this.getDestinationStatusFn = options.getDestinationStatusFn || null;
     this.onSaveFormData = options.onSaveFormData || null;
+    this.onSelectionChange = options.onSelectionChange || null;
     this.stateRef = options.stateRef || null;
 
     this._contacts = [];
@@ -107,6 +108,12 @@ class ContactsController {
       if (typeof this.ui.renderContactResults === 'function') {
         this.ui.renderContactResults(this.filteredContacts, this.searchTerm, this.contacts.length);
       }
+    }
+
+    if (typeof this.onSelectionChange === 'function') {
+      this.onSelectionChange(this.selectedContacts);
+    } else if (this.stateRef && typeof this.stateRef.onContactsSelectionChange === 'function') {
+      this.stateRef.onContactsSelectionChange(this.selectedContacts);
     }
   }
 
