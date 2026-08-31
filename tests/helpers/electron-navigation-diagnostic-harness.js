@@ -124,7 +124,7 @@ app.whenReady().then(async () => {
             }
 
             // Wait a tick for DOM & animations
-            await new Promise(r => setTimeout(r, 60));
+            await new Promise(r => setTimeout(r, 200));
 
             const activeBtn = document.querySelector('[data-tab].active')?.dataset.tab || null;
             const activePanelsAfterClick = Array.from(document.querySelectorAll('[data-panel].active')).map(p => p.dataset.panel);
@@ -170,7 +170,7 @@ app.whenReady().then(async () => {
                 width: rect.width,
                 height: rect.height,
                 rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-                visible: rect.width > 0 && rect.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0,
+                visible: rect.width > 0 && rect.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden',
                 parentChain
               };
             }

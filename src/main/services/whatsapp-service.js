@@ -1,6 +1,9 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const EventEmitter = require('events');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const crypto = require('crypto');
 const sendOperations = require('./whatsapp/send-operations');
 const MessageLogRepository = require('./message-log-repository');
 const MessageAnalyticsService = require('./message-analytics-service');
@@ -81,18 +84,23 @@ class WhatsAppService extends EventEmitter {
         this.emit('qr', qr);
       });
 
-      this.client.on('ready', async () => {
+      this.client.on('ready', () => {
+        if (this._loadingFailsafeTimer) {
+          clearTimeout(this._loadingFailsafeTimer);
+          this._loadingFailsafeTimer = null;
+        }
+
+        const wasAlreadyReady = this.isReady;
+        this.sessionState = 'ready';
         this.isReady = true;
         this.isStarting = false;
-        this.sessionState = 'ready';
-        this.lastLoadingPercent = 100;
-        await this.patchSendSeen();
+        this.isAuthenticated = true;
+        this.lastQrCode = null;
 
-        // Emite ready INMEDIATAMENTE para desbloquear la aplicación sin esperar la sincronización secundaria de grupos
-        console.log('[WhatsAppService] WhatsApp Web listo para operar. Emitiendo evento ready...');
-        this.emit('ready');
-        if (onStarted) {
-          onStarted();
+        if (!wasAlreadyReady) {
+          console.log('[WhatsAppService] WhatsApp Web listo para operar. Emitiendo evento ready...');
+          this.emit('ready');
+          if (onStarted) onStarted();
         }
 
         // Sincronización secundaria en segundo plano
@@ -112,11 +120,37 @@ class WhatsAppService extends EventEmitter {
       });
 
       this.client.on('loading_screen', (percent, message) => {
+        // Si el cliente ya está en estado 'ready', NO retroceder el estado a 'loading'
+        if (this.isReady || this.sessionState === 'ready') {
+          console.log(`[WhatsAppService] Loading screen post-ready ignorado (${percent}% - ${message})`);
+          return;
+        }
+
         this.sessionState = 'loading';
         this.lastLoadingPercent = Number(percent) || 0;
         this.lastLoadingMessage = message || '';
         console.log(`[WhatsAppService] Cargando sesion: ${percent}% - ${message}`);
         this.emit('loading_screen', { percent, message });
+
+        // Failsafe contra bloqueo al 99%: si alcanza >= 98% y tras 4 segundos 'ready' no ha disparado,
+        // verificar el estado del cliente y forzar ready si ya está conectado
+        if (Number(percent) >= 98 && !this._loadingFailsafeTimer) {
+          this._loadingFailsafeTimer = setTimeout(async () => {
+            if (!this.isReady && this.sessionState !== 'disconnected') {
+              console.log('[WhatsAppService] Failsafe 99% activado: verificando operatividad del cliente...');
+              try {
+                const state = await this.client.getState().catch(() => null);
+                if (state === 'CONNECTED' || state === null) {
+                  console.log('[WhatsAppService] Cliente operativo detectado tras 99%. Forzando estado ready...');
+                  this.isReady = true;
+                  this.sessionState = 'ready';
+                  this.emit('ready');
+                  this.loadGroups().catch(() => {});
+                }
+              } catch (_) {}
+            }
+          }, 3500);
+        }
       });
 
       this.client.on('auth_failure', (message) => {
@@ -138,13 +172,13 @@ class WhatsAppService extends EventEmitter {
       });
     }
 
-    async safeEvaluate(evalFn, fallback = null, maxRetries = 4, delayMs = 1200) {
+    async safeEvaluate(evalFn, fallback = null, maxRetries = 4, delayMs = 1200, ...args) {
       for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
         try {
           if (!this.client || !this.client.pupPage || this.client.pupPage.isClosed()) {
             return fallback;
           }
-          return await this.client.pupPage.evaluate(evalFn);
+          return await this.client.pupPage.evaluate(evalFn, ...args);
         } catch (err) {
           const msg = String(err && err.message ? err.message : err).toLowerCase();
           const isDetachedOrDestroyed =
@@ -739,6 +773,179 @@ class WhatsAppService extends EventEmitter {
       return this.messageLogRepository.getAllMessageLogs(Number(limit) || 200000);
     }
 
+    /**
+     * Extrae mensajes directamente de la memoria de WhatsApp Web (Chat.msgs)
+     * sin invocar librerías externas o métodos minificados que fallen con 'Error: r'.
+     */
+    async extractChatMessagesDirectly(targetChatId, limit = 200) {
+      if (!this.client || !this.client.pupPage || this.client.pupPage.isClosed()) {
+        return [];
+      }
+
+      return await this.safeEvaluate(
+        async (chatId, maxLimit) => {
+          try {
+            let chatObj = null;
+
+            // 1. Obtener el chat usando window.WWebJS.getChat sin getAsModel (evita WWebJS.getChatModel que lanza 'r' en grupos)
+            if (window.WWebJS && typeof window.WWebJS.getChat === 'function') {
+              try {
+                chatObj = await window.WWebJS.getChat(chatId, { getAsModel: false });
+              } catch (_) {}
+            }
+
+            // 2. Si no se obtuvo, buscar directamente en WAWebCollections
+            if (!chatObj && window.require && typeof window.require === 'function') {
+              try {
+                const widFactory = window.require('WAWebWidFactory');
+                const wid = widFactory ? widFactory.createWid(chatId) : null;
+                const collections = window.require('WAWebCollections');
+                if (collections && collections.Chat && wid) {
+                  chatObj = collections.Chat.get(wid);
+                }
+              } catch (_) {}
+
+              if (!chatObj) {
+                try {
+                  const collections = window.require('WAWebCollections');
+                  if (collections && collections.Chat && typeof collections.Chat.getModelsArray === 'function') {
+                    const chats = collections.Chat.getModelsArray();
+                    chatObj = (chats || []).find((c) => c && c.id && c.id._serialized === chatId);
+                  }
+                } catch (_) {}
+              }
+            }
+
+            let models = [];
+            if (chatObj && chatObj.msgs) {
+              if (typeof chatObj.msgs.getModelsArray === 'function') {
+                models = chatObj.msgs.getModelsArray();
+              } else if (Array.isArray(chatObj.msgs.models)) {
+                models = chatObj.msgs.models;
+              } else if (Array.isArray(chatObj.msgs._models)) {
+                models = chatObj.msgs._models;
+              }
+
+              // Intentar paginar mensajes anteriores con protección try/catch contra 'r'
+              if (chatObj && maxLimit > 0 && models.length < maxLimit && window.require) {
+                try {
+                  const loadModule = window.require('WAWebChatLoadMessages');
+                  if (loadModule && typeof loadModule.loadEarlierMsgs === 'function') {
+                    while (models.length < maxLimit) {
+                      const earlier = await loadModule.loadEarlierMsgs({ chat: chatObj });
+                      if (!earlier || !earlier.length) break;
+                      models = [...earlier, ...models];
+                    }
+                  }
+                } catch (_) {
+                  // Si loadEarlierMsgs falla o arroja 'r', se preservan los modelos ya obtenidos
+                }
+              }
+            }
+
+            // Fallback a colección global Msg si no hay modelos en el chat
+            if ((!Array.isArray(models) || models.length === 0) && window.require) {
+              try {
+                const collections = window.require('WAWebCollections');
+                if (collections && collections.Msg && typeof collections.Msg.getModelsArray === 'function') {
+                  models = collections.Msg.getModelsArray().filter((m) => {
+                    if (!m || !m.id) return false;
+                    const remote = m.id.remote ? (m.id.remote._serialized || m.id.remote) : '';
+                    return remote === chatId;
+                  });
+                }
+              } catch (_) {}
+            }
+
+            if (!Array.isArray(models) || models.length === 0) {
+              return [];
+            }
+
+            // Helper para detectar cadenas base64 gigantes de imágenes
+            const isBase64Image = (str) => {
+              if (!str || typeof str !== 'string') return false;
+              if (str.startsWith('data:image/') || str.startsWith('data:application/')) return true;
+              if (str.startsWith('/9j/') && str.length > 40) return true;
+              if (str.startsWith('iVBORw') && str.length > 40) return true;
+              if (str.startsWith('UklGR') && str.length > 40) return true;
+              if (str.length > 100 && !/\s/.test(str) && /^[A-Za-z0-9+/=_-]+$/.test(str)) return true;
+              return false;
+            };
+
+            // Mapear de forma segura sin invocar librerías externas que lancen 'r' (como WALinkify)
+            const extracted = [];
+            for (let i = 0; i < models.length; i += 1) {
+              const m = models[i];
+              if (!m || m.isNotification) continue;
+
+              const isFromMe = Boolean(m.id && m.id.fromMe !== undefined ? m.id.fromMe : m.fromMe);
+              const mType = String(m.type || (m._data && m._data.type) || '').toLowerCase();
+              const caption = String(m.caption || (m._data && m._data.caption) || '').trim();
+              const rawBody = String(m.body || (m._data && m._data.body) || '').trim();
+
+              let textContent = '';
+              if (mType === 'image' || m.hasMedia && (!mType || mType === 'image') || isBase64Image(rawBody)) {
+                textContent = caption ? `[📷 Imagen: ${caption}]` : '[📷 Imagen no disponible]';
+              } else if (mType === 'sticker') {
+                textContent = '[Sticker]';
+              } else if (mType === 'video') {
+                textContent = caption ? `[🎥 Video: ${caption}]` : '[🎥 Video no disponible]';
+              } else if (mType === 'audio' || mType === 'ptt') {
+                textContent = '[🎵 Audio]';
+              } else if (mType === 'document') {
+                const fname = m.filename || (m._data && m._data.filename) || caption || 'Documento adjunto';
+                textContent = `[📄 Documento: ${fname}]`;
+              } else {
+                textContent = rawBody || caption;
+                if (isBase64Image(textContent)) {
+                  textContent = caption ? `[📷 Imagen: ${caption}]` : '[📷 Imagen no disponible]';
+                }
+              }
+
+              if (!textContent) continue;
+
+              const rawTime = Number(m.t || m.timestamp || (m._data && m._data.t) || 0);
+              const author = m.author ? (m.author._serialized || String(m.author)) : (m.from || '');
+              const senderName = m.notifyName
+                || (m._data && m._data.notifyName)
+                || (m.senderObj && (m.senderObj.name || m.senderObj.pushname))
+                || author
+                || '';
+
+              const messageId = String(
+                (m.id && m.id._serialized) || (m._data && m._data.id && m._data.id._serialized) || m.id || `${rawTime}-${i}`
+              );
+
+              extracted.push({
+                id: messageId,
+                fromMe: isFromMe,
+                sender: isFromMe ? 'Yo' : senderName,
+                text: textContent,
+                timestamp: rawTime,
+                author,
+                notifyName: senderName
+              });
+            }
+
+            extracted.sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
+
+            if (maxLimit > 0 && extracted.length > maxLimit) {
+              return extracted.slice(extracted.length - maxLimit);
+            }
+
+            return extracted;
+          } catch (err) {
+            return [];
+          }
+        },
+        [],
+        3,
+        800,
+        targetChatId,
+        limit
+      );
+    }
+
     async getChatHistoryPreview({ chatId, limit = 180 } = {}) {
       this.ensureReady();
 
@@ -747,50 +954,349 @@ class WhatsAppService extends EventEmitter {
         throw new Error('Debes seleccionar un chat para ver el historial');
       }
 
-      const chat = await this.client.getChatById(safeChatId);
-      if (!chat) {
-        throw new Error('No se encontro el chat solicitado');
+      // Normalizar identificador para WhatsApp
+      const targetChatId = (safeChatId.includes('@') || safeChatId.endsWith('@g.us') || safeChatId.endsWith('@c.us'))
+        ? safeChatId
+        : `${safeChatId}@c.us`;
+
+      let chat = null;
+      try {
+        if (this.client && typeof this.client.getChatById === 'function') {
+          chat = await this.client.getChatById(targetChatId).catch(() => null);
+          if (!chat && targetChatId !== safeChatId) {
+            chat = await this.client.getChatById(safeChatId).catch(() => null);
+          }
+        }
+      } catch (err) {
+        console.warn(`[WhatsAppService] Error en getChatById para ${targetChatId}:`, err.message || err);
       }
 
       const safeLimit = Math.max(20, Math.min(500, Number(limit) || 180));
-      const rawMessages = await chat.fetchMessages({ limit: safeLimit });
+      let rawMessages = [];
+
+      // Intento 1: chat.fetchMessages() de whatsapp-web.js (protegido contra fallos minificados como 'r')
+      if (chat && typeof chat.fetchMessages === 'function') {
+        try {
+          const fetched = await chat.fetchMessages({ limit: safeLimit });
+          if (Array.isArray(fetched) && fetched.length > 0) {
+            rawMessages = fetched;
+          }
+        } catch (fetchErr) {
+          console.warn(`[WhatsAppService] chat.fetchMessages no disponible o falló (${fetchErr && (fetchErr.message || fetchErr)}), procediendo con extracción directa...`);
+        }
+      }
+
+      // Intento 2: Si fetchMessages falló o devolvió vacío, extraer directamente de la memoria de WhatsApp Web
+      if (!rawMessages || rawMessages.length === 0) {
+        try {
+          const directMsgs = await this.extractChatMessagesDirectly(targetChatId, safeLimit);
+          if (Array.isArray(directMsgs) && directMsgs.length > 0) {
+            rawMessages = directMsgs;
+          }
+        } catch (directErr) {
+          console.warn(`[WhatsAppService] Extracción directa falló para ${targetChatId}:`, directErr && (directErr.message || directErr));
+        }
+      }
+
+      // Resolver nombre del chat
+      let chatName = (chat && (chat.name || chat.formattedTitle)) || '';
+      if (!chatName) {
+        if (this.groups && Array.isArray(this.groups)) {
+          const foundG = this.groups.find((g) => g.id === targetChatId || g.id === safeChatId);
+          if (foundG) chatName = foundG.name;
+        }
+        if (!chatName && this.contacts && Array.isArray(this.contacts)) {
+          const foundC = this.contacts.find((c) => c.id === targetChatId || c.id === safeChatId);
+          if (foundC) chatName = foundC.name;
+        }
+      }
+      if (!chatName) {
+        chatName = safeChatId;
+      }
+
+      const isBase64String = (str) => {
+        if (!str || typeof str !== 'string') return false;
+        if (str.startsWith('data:image/') || str.startsWith('data:application/')) return true;
+        if (str.startsWith('/9j/') && str.length > 40) return true;
+        if (str.startsWith('iVBORw') && str.length > 40) return true;
+        if (str.startsWith('UklGR') && str.length > 40) return true;
+        if (str.length > 100 && !/\s/.test(str) && /^[A-Za-z0-9+/=_-]+$/.test(str)) return true;
+        return false;
+      };
 
       const items = (Array.isArray(rawMessages) ? rawMessages : [])
         .map((message) => {
-          const text = String(message && (message.body || message.caption || '') || '').trim();
+          const type = String((message && message.type) || (message && message._data && message._data.type) || '').toLowerCase();
+          const caption = String((message && message.caption) || (message && message._data && message._data.caption) || '').trim();
+          const rawBody = String(
+            (message && (message.text || message.body)) ||
+            (message && message._data && (message._data.text || message._data.body)) ||
+            ''
+          ).trim();
+
+          let text = '';
+          if (type === 'image' || (message && message.hasMedia && (!type || type === 'image')) || isBase64String(rawBody)) {
+            text = caption ? `[📷 Imagen: ${caption}]` : '[📷 Imagen no disponible]';
+          } else if (type === 'sticker') {
+            text = '[Sticker]';
+          } else if (type === 'video') {
+            text = caption ? `[🎥 Video: ${caption}]` : '[🎥 Video no disponible]';
+          } else if (type === 'audio' || type === 'ptt') {
+            text = '[🎵 Audio]';
+          } else if (type === 'document') {
+            const fname = (message && message.filename) || (message && message._data && message._data.filename) || caption || 'Documento adjunto';
+            text = `[📄 Documento: ${fname}]`;
+          } else {
+            text = rawBody || caption;
+            if (isBase64String(text)) {
+              text = caption ? `[📷 Imagen: ${caption}]` : '[📷 Imagen no disponible]';
+            }
+          }
+
           if (!text) {
             return null;
           }
 
-          const rawTimestamp = Number(message && message.timestamp ? message.timestamp : 0);
-          const timestampMs = rawTimestamp > 0 ? rawTimestamp * 1000 : Date.now();
+          const rawTimestamp = Number(message && (message.timestamp || message.t) ? (message.timestamp || message.t) : 0);
+          const timestampMs = rawTimestamp > 0 ? (rawTimestamp > 1e11 ? rawTimestamp : rawTimestamp * 1000) : Date.now();
           const timestampIso = new Date(timestampMs).toISOString();
           const fromMe = Boolean(message && message.fromMe);
           const sender = fromMe
             ? 'Yo'
             : String(
               (message && message._data && message._data.notifyName)
+              || (message && message.notifyName)
               || (message && message.author)
+              || (message && message.sender)
               || (message && message.from)
               || 'Contacto'
             );
 
+          const hasMedia = Boolean(message && (message.hasMedia || ['image', 'sticker', 'video', 'audio', 'ptt', 'document'].includes(type)));
+          const mediaMimeType = String((message && (message.mimetype || (message._data && message._data.mimetype))) || '');
+          const mediaFilename = String((message && (message.filename || (message._data && message._data.filename))) || '');
+
           return {
-            id: String(message && (message.id && message.id._serialized ? message.id._serialized : '') || `${timestampMs}-${Math.random()}`),
+            id: String(message && (message.id && message.id._serialized ? message.id._serialized : message.id) || `${timestampMs}-${Math.random()}`),
             fromMe,
             sender,
             text,
-            timestampIso
+            timestampIso,
+            type: type || 'chat',
+            hasMedia,
+            mediaAvailable: hasMedia,
+            caption,
+            mediaMimeType,
+            mediaFilename
           };
         })
         .filter(Boolean)
         .sort((a, b) => new Date(a.timestampIso).getTime() - new Date(b.timestampIso).getTime());
 
       return {
-        chatId: safeChatId,
-        chatName: chat.name || chat.formattedTitle || safeChatId,
+        chatId: targetChatId,
+        chatName,
         items
       };
+    }
+
+    /**
+     * Descarga bajo demanda el archivo multimedia de un mensaje específico.
+     * Convierte inmediatamente el Base64 efímero en un archivo temporal en disco,
+     * liberando el buffer y devolviendo al Renderer solo metadatos y ruta de archivo.
+     * 
+     * @param {Object} params
+     * @param {string} params.chatId
+     * @param {string} params.messageId
+     * @returns {Promise<{ success: boolean, messageId: string, tempFilePath?: string, mimeType?: string, filename?: string, size?: number, error?: string }>}
+     */
+    async downloadMessageMedia({ chatId, messageId } = {}) {
+      if (!this.client || !this.isReady) {
+        return {
+          success: false,
+          messageId: messageId || '',
+          error: 'WhatsApp no está conectado o listo.'
+        };
+      }
+
+      if (!messageId) {
+        return {
+          success: false,
+          messageId: '',
+          error: 'messageId es requerido para descargar multimedia.'
+        };
+      }
+
+      try {
+        let mediaData = null;
+        let mimeType = 'application/octet-stream';
+        let originalFilename = '';
+
+        // 1. Intento vía getMessageById si está disponible en whatsapp-web.js
+        if (typeof this.client.getMessageById === 'function') {
+          try {
+            const msgObj = await this.client.getMessageById(messageId);
+            if (msgObj && typeof msgObj.downloadMedia === 'function') {
+              const resMedia = await msgObj.downloadMedia();
+              if (resMedia && resMedia.data) {
+                mediaData = resMedia.data;
+                mimeType = resMedia.mimetype || mimeType;
+                originalFilename = resMedia.filename || '';
+              }
+            }
+          } catch (_) {}
+        }
+
+        // 2. Fallback vía browser evaluation en colecciones Msg / WAWebCollections
+        if (!mediaData && this.client.pupPage && typeof this.client.pupPage.evaluate === 'function') {
+          try {
+            const evalResult = await this.safeEvaluate(async (msgId) => {
+              try {
+                const collections = window.require && window.require('WAWebCollections');
+                let m = collections && collections.Msg ? collections.Msg.get(msgId) : null;
+                if (!m && collections && collections.Msg && typeof collections.Msg.getMessagesById === 'function') {
+                  const ms = await collections.Msg.getMessagesById([msgId]);
+                  m = ms && ms.messages ? ms.messages[0] : null;
+                }
+                if (!m) return null;
+
+                if (m.mediaData && m.mediaData.mediaStage !== 'RESOLVED' && typeof m.downloadMedia === 'function') {
+                  await m.downloadMedia({ downloadEvenIfExpensive: true, rmrReason: 1 });
+                }
+
+                if (window.require) {
+                  const dlManager = window.require('WAWebDownloadManager');
+                  if (dlManager && dlManager.downloadManager && typeof dlManager.downloadManager.downloadAndMaybeDecrypt === 'function') {
+                    const decrypted = await dlManager.downloadManager.downloadAndMaybeDecrypt({
+                      directPath: m.directPath,
+                      encFilehash: m.encFilehash,
+                      filehash: m.filehash,
+                      mediaKey: m.mediaKey,
+                      mediaKeyTimestamp: m.mediaKeyTimestamp,
+                      type: m.type,
+                      signal: new AbortController().signal
+                    });
+                    if (decrypted && window.WWebJS && typeof window.WWebJS.arrayBufferToBase64Async === 'function') {
+                      const b64 = await window.WWebJS.arrayBufferToBase64Async(decrypted);
+                      return {
+                        data: b64,
+                        mimetype: m.mimetype,
+                        filename: m.filename
+                      };
+                    }
+                  }
+                }
+                return null;
+              } catch (_) {
+                return null;
+              }
+            }, messageId);
+
+            if (evalResult && evalResult.data) {
+              mediaData = evalResult.data;
+              mimeType = evalResult.mimetype || mimeType;
+              originalFilename = evalResult.filename || originalFilename;
+            }
+          } catch (_) {}
+        }
+
+        if (!mediaData) {
+          return {
+            success: false,
+            messageId,
+            error: 'El archivo multimedia ya no está disponible en WhatsApp Web.'
+          };
+        }
+
+        // 3. Conversión inmediata de Base64 a Buffer binario y liberación de memoria Base64
+        const binaryBuffer = Buffer.from(mediaData, 'base64');
+        mediaData = null; // Liberar referencia inmediatamente
+
+        const size = binaryBuffer.length;
+        const MAX_SINGLE_BYTES = 25 * 1024 * 1024; // 25 MB
+        if (size > MAX_SINGLE_BYTES) {
+          return {
+            success: false,
+            messageId,
+            error: `El archivo multimedia (${Math.round(size / 1024 / 1024)} MB) supera el límite permitido de 25 MB.`
+          };
+        }
+
+        // 4. Determinar extensión adecuada
+        const extMap = {
+          'image/jpeg': '.jpg',
+          'image/png': '.png',
+          'image/webp': '.webp',
+          'image/gif': '.gif',
+          'video/mp4': '.mp4',
+          'video/3gpp': '.3gp',
+          'audio/ogg': '.ogg',
+          'audio/mpeg': '.mp3',
+          'audio/mp4': '.m4a',
+          'application/pdf': '.pdf',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
+        };
+        const ext = extMap[mimeType] || path.extname(originalFilename) || '.bin';
+
+        // 5. Directorio temporal seguro en OS tmpdir
+        const tempBaseDir = path.join(os.tmpdir(), 'whatsapp-export-media');
+        await fs.promises.mkdir(tempBaseDir, { recursive: true });
+
+        const safeIdHash = crypto.createHash('md5').update(String(messageId)).digest('hex').slice(0, 12);
+        const tempFileName = `media_${Date.now()}_${safeIdHash}${ext}`;
+        const tempFilePath = path.join(tempBaseDir, tempFileName);
+
+        await fs.promises.writeFile(tempFilePath, binaryBuffer);
+
+        return {
+          success: true,
+          messageId,
+          tempFilePath,
+          mimeType,
+          filename: originalFilename || tempFileName,
+          size
+        };
+      } catch (err) {
+        return {
+          success: false,
+          messageId,
+          error: err && err.message ? err.message : String(err)
+        };
+      }
+    }
+
+    /**
+     * Limpia de forma segura los archivos temporales creados para una exportación.
+     * Solo elimina archivos ubicados dentro de la carpeta temporal whatsapp-export-media.
+     * 
+     * @param {Object} params
+     * @param {Array<string>} params.filePaths
+     * @returns {Promise<{ success: boolean, removedCount: number }>}
+     */
+    async cleanupTempMedia({ filePaths = [] } = {}) {
+      if (!Array.isArray(filePaths) || filePaths.length === 0) {
+        return { success: true, removedCount: 0 };
+      }
+
+      const tempBaseDir = path.resolve(os.tmpdir(), 'whatsapp-export-media');
+      let removedCount = 0;
+
+      for (const filePath of filePaths) {
+        try {
+          if (typeof filePath !== 'string') continue;
+          const resolvedPath = path.resolve(filePath);
+          // Asegurar que el archivo esté estrictamente dentro de tempBaseDir (prevenir path traversal)
+          if (resolvedPath.startsWith(tempBaseDir) && fs.existsSync(resolvedPath)) {
+            await fs.promises.unlink(resolvedPath);
+            removedCount += 1;
+          }
+        } catch (_) {
+          // Ignorar errores individuales en limpieza
+        }
+      }
+
+      return { success: true, removedCount };
     }
 
     async sendScheduledMessage(schedule) {

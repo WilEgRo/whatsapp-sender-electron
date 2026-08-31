@@ -25,6 +25,10 @@ const {
 } = require('../infrastructure/chat-export-gateway');
 
 const {
+  MediaIpcGateway
+} = require('../../history/infrastructure/media-ipc-gateway');
+
+const {
   getChatExportElements,
   renderTargetTabs,
   renderTargetsList,
@@ -40,12 +44,14 @@ class ChatExportController {
    * @param {Object} [options.ui] - UiManager
    * @param {Object} [options.ipcClient] - Cliente IPC
    * @param {ChatExportGateway} [options.gateway] - Gateway inyectable
+   * @param {MediaIpcGateway} [options.mediaGateway] - Gateway de multimedia inyectable
    */
   constructor(options = {}) {
     this.stateRef = options.stateRef || null;
     this.ui = options.ui || null;
     this.ipcClient = options.ipcClient || (this.stateRef && this.stateRef.ipcClient) || null;
     this.gateway = options.gateway || new ChatExportGateway(this.ipcClient);
+    this.mediaGateway = options.mediaGateway || new MediaIpcGateway(this.ipcClient);
 
     this.activeType = 'contacts';
     this.searchTerm = '';
@@ -253,19 +259,35 @@ class ChatExportController {
 
     this.isExporting = true;
     setExportButtonsDisabled(elements, true);
+
+    // Snapshot aislado del destinatario seleccionado (evita que un cambio de selección contamine la exportación)
+    const targetSnapshot = { ...this.selectedTarget };
+    const includeMedia = Boolean(elements.includeMediaCheck && elements.includeMediaCheck.checked);
+
     renderExportStatus(elements, {
       loading: true,
       state: 'loading',
-      message: `Recuperando historial para ${this.selectedTarget.name}...`
+      message: `Recuperando historial para ${targetSnapshot.name}...`
     });
+
+    const onProgress = (prog) => {
+      renderExportStatus(elements, {
+        loading: true,
+        state: 'loading',
+        message: prog && prog.message ? prog.message : 'Procesando exportación...'
+      });
+    };
 
     try {
       // 1. Ejecutar exportación bajo demanda
       const result = await executeChatExport({
         gateway: this.gateway,
-        target: this.selectedTarget,
+        mediaGateway: this.mediaGateway,
+        target: targetSnapshot,
         format,
-        limit: 1000
+        limit: 1000,
+        includeMedia,
+        onProgress
       });
 
       const { exported, messageCount } = result;

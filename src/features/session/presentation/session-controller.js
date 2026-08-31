@@ -211,6 +211,7 @@ class SessionController {
     });
 
     this.ipcClient.on('whatsapp-loading-screen', (_event, payload) => {
+      if (this.isReady) return;
       const percent = payload && payload.percent ? Number(payload.percent) : 0;
       const message = payload && payload.message ? payload.message : 'Descargando datos de WhatsApp...';
       if (ui) {

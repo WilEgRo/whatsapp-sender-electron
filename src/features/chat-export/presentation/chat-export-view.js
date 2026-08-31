@@ -39,6 +39,7 @@ function getChatExportElements(root = document) {
     exportHtmlBtn: root.getElementById('chatExportHtmlBtn'),
     exportPdfBtn: root.getElementById('chatExportPdfBtn'),
     exportJsonBtn: root.getElementById('chatExportJsonBtn'),
+    includeMediaCheck: root.getElementById('chatExportIncludeMediaCheck'),
     statusBox: root.getElementById('chatExportStatusBox'),
     statusText: root.getElementById('chatExportStatusText'),
     statusSpinner: root.getElementById('chatExportStatusSpinner')

@@ -21,12 +21,20 @@ function escapeHtml(str = '') {
     .replace(/'/g, '&#39;');
 }
 
+let fsModule = null;
+try {
+  fsModule = require('fs');
+} catch (_) {}
+
 /**
  * Genera el documento de conversación en texto plano universal (TXT).
  * @param {Object} conversation
+ * @param {Object} [options]
+ * @param {Map<string, Object>} [options.mediaMap]
+ * @param {boolean} [options.includeMedia=false]
  * @returns {string}
  */
-function formatConversationTxt(conversation = {}) {
+function formatConversationTxt(conversation = {}, { mediaMap = null, includeMedia = false } = {}) {
   const target = conversation.target || {};
   const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
   const metadata = conversation.metadata || {};
@@ -50,6 +58,9 @@ function formatConversationTxt(conversation = {}) {
   output += `Mensajes en reporte: ${total}\n`;
   output += `Periodo abarcado:    ${firstDate} — ${lastDate}\n`;
   output += `Fecha exportación:   ${now}\n`;
+  if (includeMedia) {
+    output += 'Modalidad:           Con multimedia bajo demanda\n';
+  }
   output += '================================================================================\n\n';
 
   if (total === 0) {
@@ -64,7 +75,28 @@ function formatConversationTxt(conversation = {}) {
       const time = formatMessageTime(msg.timestampIso);
       const date = formatConversationDate(msg.timestampIso);
       const sender = msg.senderLabel || (msg.isOutgoing ? 'Yo' : name);
-      const text = msg.text || '';
+      let text = msg.text || '';
+
+      if (includeMedia && mediaMap && mediaMap.has(msg.id)) {
+        const item = mediaMap.get(msg.id);
+        if (item && item.available) {
+          const fn = item.filename || `${msg.type || 'archivo'}`;
+          const cap = msg.caption ? `\nDescripción: ${msg.caption}` : '';
+          const typeLabelMap = {
+            image: 'IMAGEN',
+            video: 'VIDEO',
+            audio: 'AUDIO',
+            ptt: 'AUDIO',
+            document: 'DOCUMENTO',
+            sticker: 'STICKER'
+          };
+          const resolvedTypeName = typeLabelMap[msg.type] || (msg.type ? msg.type.toUpperCase() : 'MULTIMEDIA');
+          text = `[📷 ${resolvedTypeName} INCLUIDA: ${fn}]${cap}`;
+        } else if (item && item.label) {
+          text = item.label;
+        }
+      }
+
       output += `[${date} ${time}] ${sender}:\n${text}\n\n`;
     });
   });
@@ -78,9 +110,12 @@ function formatConversationTxt(conversation = {}) {
 /**
  * Genera un documento HTML autónomo y auto-estilizado, listo para visualización en navegador o impresión PDF.
  * @param {Object} conversation
+ * @param {Object} [options]
+ * @param {Map<string, Object>} [options.mediaMap]
+ * @param {boolean} [options.includeMedia=false]
  * @returns {string}
  */
-function formatConversationHtml(conversation = {}) {
+function formatConversationHtml(conversation = {}, { mediaMap = null, includeMedia = false } = {}) {
   const target = conversation.target || {};
   const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
   const metadata = conversation.metadata || {};
@@ -108,11 +143,32 @@ function formatConversationHtml(conversation = {}) {
         const text = escapeHtml(msg.text || '').replace(/\n/g, '<br>');
         const time = escapeHtml(formatMessageTime(msg.timestampIso));
 
+        let mediaHtml = '';
+        if (includeMedia && mediaMap && mediaMap.has(msg.id)) {
+          const item = mediaMap.get(msg.id);
+          if (item && item.available && item.tempFilePath) {
+            const isImage = (msg.type === 'image' || String(item.mimeType).startsWith('image/'));
+            if (isImage && fsModule && fsModule.existsSync(item.tempFilePath)) {
+              try {
+                const b64 = fsModule.readFileSync(item.tempFilePath).toString('base64');
+                mediaHtml = `<img class="media-preview-img" src="data:${item.mimeType || 'image/jpeg'};base64,${b64}" alt="${escapeHtml(item.filename || 'Imagen')}">`;
+              } catch (_) {}
+            } else {
+              const fname = escapeHtml(item.filename || 'Archivo adjunto');
+              const sizeKb = Math.round((Number(item.size) || 0) / 1024);
+              mediaHtml = `<div class="media-badge"><span>📎 ${fname} (${sizeKb} KB)</span></div>`;
+            }
+          } else if (item && item.label) {
+            mediaHtml = `<div class="media-badge media-badge--unavailable"><span>${escapeHtml(item.label)}</span></div>`;
+          }
+        }
+
         chatBodyHtml += `
           <div class="bubble-row ${isOut ? 'bubble-row--outgoing' : 'bubble-row--incoming'}">
             <div class="bubble">
               <div class="bubble-sender">${sender}</div>
               <div class="bubble-text">${text}</div>
+              ${mediaHtml}
               <div class="bubble-time">${time}</div>
             </div>
           </div>
@@ -148,6 +204,7 @@ function formatConversationHtml(conversation = {}) {
       }
       body { padding: 0 !important; background: white !important; }
       .chat-header { border: 1px solid #ccc !important; }
+      .media-preview-img { max-height: 240px !important; page-break-inside: avoid; }
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -210,29 +267,52 @@ function formatConversationHtml(conversation = {}) {
     .bubble {
       max-width: 75%;
       padding: 10px 14px;
-      border-radius: 10px;
-      word-break: break-word;
+      border-radius: 12px;
+      position: relative;
     }
     .bubble-row--outgoing .bubble {
       background: var(--bubble-out);
-      border-bottom-right-radius: 2px;
+      border-top-right-radius: 2px;
     }
     .bubble-row--incoming .bubble {
       background: var(--bubble-in);
-      border-bottom-left-radius: 2px;
+      border-top-left-radius: 2px;
     }
     .bubble-sender {
-      font-size: 11px;
-      font-weight: bold;
+      font-size: 12px;
+      font-weight: 600;
       color: var(--text-muted);
-      margin-bottom: 2px;
+      margin-bottom: 4px;
     }
     .bubble-text {
+      word-break: break-word;
       font-size: 14px;
     }
+    .media-preview-img {
+      max-width: 100%;
+      max-height: 320px;
+      border-radius: 8px;
+      margin-top: 8px;
+      display: block;
+      object-fit: contain;
+    }
+    .media-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 6px;
+      font-size: 0.88em;
+      margin-top: 6px;
+    }
+    .media-badge--unavailable {
+      opacity: 0.75;
+      font-style: italic;
+    }
     .bubble-time {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.6);
+      font-size: 11px;
+      color: var(--text-muted);
       text-align: right;
       margin-top: 4px;
     }
@@ -267,15 +347,34 @@ function formatConversationHtml(conversation = {}) {
 /**
  * Genera la representación estructurada en formato JSON para respaldo técnico.
  * @param {Object} conversation
+ * @param {Object} [options]
+ * @param {Map<string, Object>} [options.mediaMap]
+ * @param {boolean} [options.includeMedia=false]
  * @returns {string}
  */
-function formatConversationJson(conversation = {}) {
+function formatConversationJson(conversation = {}, { mediaMap = null, includeMedia = false } = {}) {
+  const rawMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
+  const processedMessages = rawMessages.map((msg) => {
+    const copy = { ...msg };
+    if (includeMedia && mediaMap && mediaMap.has(msg.id)) {
+      const item = mediaMap.get(msg.id);
+      copy.media = {
+        available: Boolean(item && item.available),
+        filename: (item && item.filename) || msg.mediaFilename || '',
+        mimeType: (item && item.mimeType) || msg.mediaMimeType || '',
+        size: (item && item.size) || 0
+      };
+    }
+    return copy;
+  });
+
   const payload = {
     app: 'La Martina WhatsApp Sender Pro',
     exportedAt: new Date().toISOString(),
+    includeMedia: Boolean(includeMedia),
     target: conversation.target || {},
     metadata: conversation.metadata || {},
-    messages: conversation.messages || []
+    messages: processedMessages
   };
 
   return JSON.stringify(payload, null, 2);
@@ -286,9 +385,11 @@ function formatConversationJson(conversation = {}) {
  * @param {Object} params
  * @param {Object} params.conversation
  * @param {'txt'|'html'|'pdf'|'json'} [params.format='txt']
+ * @param {Map<string, Object>} [params.mediaMap=null]
+ * @param {boolean} [params.includeMedia=false]
  * @returns {{ content: string, mimeType: string, extension: string, filename: string }}
  */
-function exportConversation({ conversation = {}, format = 'txt' } = {}) {
+function exportConversation({ conversation = {}, format = 'txt', mediaMap = null, includeMedia = false } = {}) {
   const safeFormat = String(format || 'txt').toLowerCase();
   const target = conversation.target || {};
   const safeName = String(target.name || 'conversacion')
@@ -297,7 +398,7 @@ function exportConversation({ conversation = {}, format = 'txt' } = {}) {
   const timestamp = new Date().toISOString().slice(0, 10);
 
   if (safeFormat === 'html' || safeFormat === 'pdf') {
-    const htmlContent = formatConversationHtml(conversation);
+    const htmlContent = formatConversationHtml(conversation, { mediaMap, includeMedia });
     return {
       content: htmlContent,
       mimeType: 'text/html',
@@ -307,7 +408,7 @@ function exportConversation({ conversation = {}, format = 'txt' } = {}) {
   }
 
   if (safeFormat === 'json') {
-    const jsonContent = formatConversationJson(conversation);
+    const jsonContent = formatConversationJson(conversation, { mediaMap, includeMedia });
     return {
       content: jsonContent,
       mimeType: 'application/json',
@@ -316,7 +417,7 @@ function exportConversation({ conversation = {}, format = 'txt' } = {}) {
     };
   }
 
-  const txtContent = formatConversationTxt(conversation);
+  const txtContent = formatConversationTxt(conversation, { mediaMap, includeMedia });
   return {
     content: txtContent,
     mimeType: 'text/plain',

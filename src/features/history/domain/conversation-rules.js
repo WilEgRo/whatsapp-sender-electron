@@ -97,6 +97,10 @@ function getMessageTimestamp(message) {
     return message.timestamp > 1e11 ? message.timestamp : message.timestamp * 1000;
   }
 
+  if (typeof message.t === 'number' && message.t > 0) {
+    return message.t > 1e11 ? message.t : message.t * 1000;
+  }
+
   if (message.createdAtIso) {
     const parsed = new Date(message.createdAtIso).getTime();
     if (!Number.isNaN(parsed) && parsed > 0) return parsed;
@@ -231,6 +235,131 @@ function groupMessagesByDay(messages = []) {
   return Array.from(groupsMap.values());
 }
 
+/**
+ * Detecta y procesa contenido de medios (imágenes, stickers, audios, videos) o cadenas base64 gigantes,
+ * reemplazándolas por un indicador limpio como '[📷 Imagen: caption]' o '[📷 Imagen no disponible]'.
+ * @param {Object|string} rawMessage
+ * @returns {string}
+ */
+function sanitizeMessageText(rawMessage = {}) {
+  if (typeof rawMessage === 'string') {
+    rawMessage = { text: rawMessage };
+  }
+  const type = String((rawMessage && rawMessage.type) || (rawMessage && rawMessage._data && rawMessage._data.type) || '').toLowerCase();
+  const caption = String((rawMessage && rawMessage.caption) || (rawMessage && rawMessage._data && rawMessage._data.caption) || '').trim();
+  const rawBody = String(
+    (rawMessage && (rawMessage.text || rawMessage.body)) ||
+    (rawMessage && rawMessage._data && (rawMessage._data.text || rawMessage._data.body)) ||
+    ''
+  ).trim();
+
+  const isBase64Data = (str = '') => {
+    if (!str || typeof str !== 'string') return false;
+    if (str.startsWith('data:image/') || str.startsWith('data:application/') || str.startsWith('data:video/')) return true;
+    if (str.startsWith('/9j/') && str.length > 40) return true;
+    if (str.startsWith('iVBORw') && str.length > 40) return true;
+    if (str.startsWith('UklGR') && str.length > 40) return true;
+    if (str.length > 100 && !/\s/.test(str) && /^[A-Za-z0-9+/=_-]+$/.test(str)) return true;
+    return false;
+  };
+
+  const isMedia = Boolean(rawMessage && (rawMessage.hasMedia || ['image', 'sticker', 'video', 'audio', 'ptt', 'document'].includes(type)));
+
+  if (type === 'image' || (isMedia && (!type || type === 'image')) || isBase64Data(rawBody)) {
+    if (caption) {
+      return `[📷 Imagen: ${caption}]`;
+    }
+    return '[📷 Imagen no disponible]';
+  }
+
+  if (type === 'sticker') {
+    return '[Sticker]';
+  }
+
+  if (type === 'video') {
+    if (caption) {
+      return `[🎥 Video: ${caption}]`;
+    }
+    return '[🎥 Video no disponible]';
+  }
+
+  if (type === 'audio' || type === 'ptt') {
+    return '[🎵 Audio]';
+  }
+
+  if (type === 'document') {
+    const filename = String((rawMessage && rawMessage.filename) || (rawMessage && rawMessage._data && rawMessage._data.filename) || caption || 'Documento adjunto');
+    return `[📄 Documento: ${filename}]`;
+  }
+
+  if (caption && isBase64Data(rawBody)) {
+    return `[📷 Imagen: ${caption}]`;
+  }
+
+  if (isBase64Data(rawBody)) {
+    return '[📷 Imagen no disponible]';
+  }
+
+  return rawBody || caption || '';
+}
+
+const MAX_MEDIA_ITEMS_PER_EXPORT = 50;
+const MAX_SINGLE_MEDIA_BYTES = 25 * 1024 * 1024; // 25 MB
+const MAX_TOTAL_MEDIA_BYTES = 100 * 1024 * 1024; // 100 MB
+
+/**
+ * Comprueba si un mensaje representa o contiene contenido multimedia.
+ * @param {Object} message
+ * @returns {boolean}
+ */
+function isMediaMessage(message = {}) {
+  if (!message || typeof message !== 'object') return false;
+  if (message.hasMedia === true) return true;
+  const type = String(message.type || (message._data && message._data.type) || '').toLowerCase();
+  return ['image', 'sticker', 'video', 'audio', 'ptt', 'document'].includes(type);
+}
+
+/**
+ * Extrae metadatos ligeros de un mensaje multimedia sin conservar Base64 ni buffers.
+ * @param {Object} rawMessage
+ * @returns {{ type: string, hasMedia: boolean, mediaAvailable: boolean, caption: string, mediaMimeType: string, mediaFilename: string }}
+ */
+function extractMediaMetadata(rawMessage = {}) {
+  if (!rawMessage || typeof rawMessage !== 'object') {
+    return {
+      type: 'chat',
+      hasMedia: false,
+      mediaAvailable: false,
+      caption: '',
+      mediaMimeType: '',
+      mediaFilename: ''
+    };
+  }
+
+  const rawType = String(rawMessage.type || (rawMessage._data && rawMessage._data.type) || '').toLowerCase();
+  const hasMedia = Boolean(rawMessage.hasMedia || ['image', 'sticker', 'video', 'audio', 'ptt', 'document'].includes(rawType));
+  const caption = String(rawMessage.caption || (rawMessage._data && rawMessage._data.caption) || '').trim();
+  const mediaMimeType = String(rawMessage.mimetype || rawMessage.mediaMimeType || (rawMessage._data && rawMessage._data.mimetype) || '').trim();
+  const mediaFilename = String(
+    rawMessage.filename
+    || rawMessage.mediaFilename
+    || (rawMessage._data && rawMessage._data.filename)
+    || ''
+  ).trim();
+
+  let resolvedType = hasMedia ? (rawType || 'image') : (rawType || 'chat');
+  if (resolvedType === 'ptt') resolvedType = 'audio';
+
+  return {
+    type: resolvedType,
+    hasMedia,
+    mediaAvailable: hasMedia,
+    caption,
+    mediaMimeType,
+    mediaFilename
+  };
+}
+
 module.exports = {
   normalizeConversationTarget,
   getConversationTargetId,
@@ -242,5 +371,11 @@ module.exports = {
   sortMessagesChronologically,
   formatConversationDate,
   formatMessageTime,
-  groupMessagesByDay
+  groupMessagesByDay,
+  sanitizeMessageText,
+  MAX_MEDIA_ITEMS_PER_EXPORT,
+  MAX_SINGLE_MEDIA_BYTES,
+  MAX_TOTAL_MEDIA_BYTES,
+  isMediaMessage,
+  extractMediaMetadata
 };

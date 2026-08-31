@@ -8,6 +8,8 @@
  * Aislamiento estricto: Cero dependencias de DOM, Electron ni IPC.
  */
 
+const { sanitizeMessageText, extractMediaMetadata } = require('./conversation-rules');
+
 const DEFAULT_PAGE_SIZE = 50;
 const MIN_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 200;
@@ -81,12 +83,20 @@ function filterChatTargets(targets = [], searchTerm = '') {
  * @returns {{ id: string, isOutgoing: boolean, senderLabel: string, timeLabel: string, text: string, timestampIso: string|null }}
  */
 function normalizeChatMessage(rawMessage = {}, fallbackLabel = 'Contacto') {
-  const isOutgoing = Boolean(rawMessage && rawMessage.fromMe);
-  const sender = rawMessage && rawMessage.sender ? String(rawMessage.sender) : fallbackLabel;
+  const isOutgoing = Boolean(rawMessage && (rawMessage.fromMe || rawMessage.isOutgoing));
+  const sender = rawMessage && (rawMessage.sender || rawMessage.senderLabel) ? String(rawMessage.sender || rawMessage.senderLabel) : fallbackLabel;
   const senderLabel = isOutgoing ? 'Yo' : sender;
 
   let timeLabel = '--:--';
-  const timestampIso = rawMessage && rawMessage.timestampIso ? String(rawMessage.timestampIso) : null;
+  let timestampIso = rawMessage && rawMessage.timestampIso ? String(rawMessage.timestampIso) : null;
+  if (!timestampIso && rawMessage && (rawMessage.timestamp || rawMessage.t)) {
+    const rawTs = Number(rawMessage.timestamp || rawMessage.t);
+    if (rawTs > 0) {
+      const ms = rawTs > 1e11 ? rawTs : rawTs * 1000;
+      timestampIso = new Date(ms).toISOString();
+    }
+  }
+
   if (timestampIso) {
     const parsed = new Date(timestampIso);
     if (!Number.isNaN(parsed.getTime())) {
@@ -99,13 +109,22 @@ function normalizeChatMessage(rawMessage = {}, fallbackLabel = 'Contacto') {
     }
   }
 
+  const text = sanitizeMessageText(rawMessage);
+  const mediaMeta = extractMediaMetadata(rawMessage);
+
   return {
     id: String((rawMessage && rawMessage.id) || ''),
     isOutgoing,
     senderLabel,
     timeLabel,
-    text: String((rawMessage && rawMessage.text) || ''),
-    timestampIso
+    text,
+    timestampIso,
+    type: mediaMeta.type,
+    hasMedia: mediaMeta.hasMedia,
+    mediaAvailable: mediaMeta.mediaAvailable,
+    caption: mediaMeta.caption,
+    mediaMimeType: mediaMeta.mediaMimeType,
+    mediaFilename: mediaMeta.mediaFilename
   };
 }
 

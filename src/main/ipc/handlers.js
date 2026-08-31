@@ -228,6 +228,7 @@ function registerIpcHandlers({ ipcMain, dialog, getMainWindow, getWhatsAppServic
 
   ipcMain.handle('get-chat-history-preview', async (_event, payload) => {
     const whatsappService = getWhatsAppService();
+    const targetChatId = (payload && payload.chatId) || 'desconocido';
 
     try {
       const result = await whatsappService.getChatHistoryPreview({
@@ -237,7 +238,44 @@ function registerIpcHandlers({ ipcMain, dialog, getMainWindow, getWhatsAppServic
 
       return formatSuccess(result);
     } catch (error) {
-      return formatError(error);
+      const errorMsg = error && error.message ? error.message : String(error);
+      return {
+        success: false,
+        error: `[get-chat-history-preview] No se pudo recuperar el historial para '${targetChatId}': ${errorMsg}`
+      };
+    }
+  });
+
+  ipcMain.handle('download-chat-media', async (_event, payload) => {
+    const whatsappService = getWhatsAppService();
+    try {
+      const result = await whatsappService.downloadMessageMedia({
+        chatId: payload && payload.chatId,
+        messageId: payload && payload.messageId
+      });
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        messageId: payload && payload.messageId,
+        error: error && error.message ? error.message : String(error)
+      };
+    }
+  });
+
+  ipcMain.handle('cleanup-export-media', async (_event, payload) => {
+    const whatsappService = getWhatsAppService();
+    try {
+      const result = await whatsappService.cleanupTempMedia({
+        filePaths: payload && payload.filePaths
+      });
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        removedCount: 0,
+        error: error && error.message ? error.message : String(error)
+      };
     }
   });
 

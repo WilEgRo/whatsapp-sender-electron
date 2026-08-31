@@ -48,7 +48,7 @@ async function loadConversation({ gateway, target, limit = DEFAULT_PAGE_SIZE, of
 
   if (!response || !response.success || !response.result) {
     const errorDetail = (response && response.error) || 'No se pudo recuperar el historial de la conversación';
-    throw new Error(errorDetail);
+    throw new Error(`Error al recuperar conversación (${normalizedTarget.name || normalizedTarget.id}): ${errorDetail}`);
   }
 
   const rawItems = Array.isArray(response.result.items) ? response.result.items : [];
