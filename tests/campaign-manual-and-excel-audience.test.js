@@ -247,3 +247,100 @@ test('Payload & Validation 1: validateCampaign aprueba campaña con números vá
   assert.equal(validation.valid, true);
   assert.equal(validation.errors.length, 0);
 });
+
+test('MessagingController: sendBatch resuelve correctamente el módulo sending sin errores de require', async () => {
+  const { MessagingController } = require('../src/features/messaging/presentation/messaging-controller');
+  const controller = new MessagingController();
+
+  global.document = {
+    getElementById: () => ({ value: '12', checked: true })
+  };
+
+  controller.stateRef = {
+    modeConfig: require('../src/renderer/js/modules/app/mode-config'),
+    campaignRiskByMode: { contacts: { level: 'green' } },
+    ui: {
+      showToast: () => {},
+      showProgress: () => {},
+      hideProgress: () => {},
+      getSelectedGroupIds: () => []
+    },
+    filesByMode: { contacts: [] },
+    selectedContacts: [],
+    authState: { isValidated: false }
+  };
+
+  try {
+    // No debe lanzar "Cannot find module"
+    await controller.sendBatch('contacts');
+  } finally {
+    delete global.document;
+  }
+});
+
+test('MessagingController: selectFiles carga y renderiza archivos recibidos como Array desde IPC', async () => {
+  const { MessagingController } = require('../src/features/messaging/presentation/messaging-controller');
+  const controller = new MessagingController();
+
+  controller.gateway = {
+    selectFiles: async () => [
+      { path: 'C:/docs/brochure.pdf', name: 'brochure.pdf' },
+      { path: 'C:/docs/promo.png', name: 'promo.png' }
+    ]
+  };
+
+  let renderedMode = null;
+  let renderedFiles = null;
+  controller.ui = {
+    renderFiles: (mode, files) => {
+      renderedMode = mode;
+      renderedFiles = files;
+    },
+    showToast: () => {}
+  };
+  controller.refreshRiskPanel = () => {};
+
+  await controller.selectFiles('contacts');
+
+  assert.equal(renderedMode, 'contacts');
+  assert.ok(Array.isArray(renderedFiles));
+  assert.equal(renderedFiles.length, 2);
+  assert.equal(renderedFiles[0].name, 'brochure.pdf');
+  assert.equal(renderedFiles[1].name, 'promo.png');
+  assert.equal(controller.filesByMode.contacts.length, 2);
+});
+
+test('MessagingController: selectFiles evita duplicados y respeta límite de maxFiles', async () => {
+  const { MessagingController } = require('../src/features/messaging/presentation/messaging-controller');
+  const controller = new MessagingController({
+    modeConfig: {
+      contacts: { maxFiles: 3 }
+    }
+  });
+
+  controller.filesByMode = {
+    contacts: [{ path: 'C:/docs/file1.pdf', name: 'file1.pdf' }],
+    groups: []
+  };
+
+  controller.gateway = {
+    selectFiles: async () => [
+      { path: 'C:/docs/file1.pdf', name: 'file1.pdf' },
+      { path: 'C:/docs/file2.pdf', name: 'file2.pdf' },
+      { path: 'C:/docs/file3.pdf', name: 'file3.pdf' },
+      { path: 'C:/docs/file4.pdf', name: 'file4.pdf' }
+    ]
+  };
+
+  controller.ui = { renderFiles: () => {}, showToast: () => {} };
+  controller.refreshRiskPanel = () => {};
+
+  await controller.selectFiles('contacts');
+
+  assert.equal(controller.filesByMode.contacts.length, 3);
+  assert.equal(controller.filesByMode.contacts[0].name, 'file1.pdf');
+  assert.equal(controller.filesByMode.contacts[1].name, 'file2.pdf');
+  assert.equal(controller.filesByMode.contacts[2].name, 'file3.pdf');
+});
+
+

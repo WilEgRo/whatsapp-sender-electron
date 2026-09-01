@@ -305,6 +305,7 @@ class AppController {
 
       this.filesByMode[mode].splice(index, 1);
       this.ui.renderFiles(mode, this.filesByMode[mode]);
+      this.saveFormData();
       sendingActions.refreshRiskPanel(this, mode);
     });
 

@@ -83,6 +83,13 @@ class MessagingController {
     return this._filesByMode;
   }
 
+  set filesByMode(val) {
+    this._filesByMode = val || { contacts: [], groups: [] };
+    if (this.stateRef) {
+      this.stateRef.filesByMode = this._filesByMode;
+    }
+  }
+
   get messageComposer() {
     if (this.stateRef && this.stateRef.messageComposer) {
       return this.stateRef.messageComposer;
@@ -413,20 +420,28 @@ class MessagingController {
     const ui = this._getUi();
     try {
       const result = await this.gateway.selectFiles();
-      if (!result || !result.files || result.files.length === 0) return;
+      const rawFiles = Array.isArray(result)
+        ? result
+        : (result && Array.isArray(result.files) ? result.files : []);
+      if (!rawFiles || rawFiles.length === 0) return;
 
-      const currentFiles = this.filesByMode[mode] || [];
-      const newFiles = result.files.filter(
-        (f) => !currentFiles.some((cf) => cf.path === f.path)
+      const config = (this.modeConfig && this.modeConfig[mode]) || {};
+      const maxFiles = Number.isFinite(config.maxFiles) ? config.maxFiles : 5;
+
+      const currentFiles = Array.isArray(this.filesByMode[mode]) ? this.filesByMode[mode] : [];
+      const newFiles = rawFiles.filter(
+        (f) => f && f.path && !currentFiles.some((cf) => cf.path === f.path)
       );
 
-      this.filesByMode[mode] = [...currentFiles, ...newFiles];
+      const merged = [...currentFiles, ...newFiles].slice(0, maxFiles);
+
+      this.filesByMode[mode] = merged;
       if (this.stateRef && this.stateRef.filesByMode) {
-        this.stateRef.filesByMode[mode] = this.filesByMode[mode];
+        this.stateRef.filesByMode[mode] = merged;
       }
 
       if (ui && typeof ui.renderFiles === 'function') {
-        ui.renderFiles(mode, this.filesByMode[mode]);
+        ui.renderFiles(mode, merged);
       }
 
       this.refreshRiskPanel(mode);
@@ -440,7 +455,7 @@ class MessagingController {
   }
 
   async sendBatch(mode, options = {}) {
-    const sendingActions = require('../../renderer/js/modules/app/sending');
+    const sendingActions = require('../../../renderer/js/modules/app/sending');
     return sendingActions.sendBatch(this.stateRef || this, mode, options);
   }
 }
